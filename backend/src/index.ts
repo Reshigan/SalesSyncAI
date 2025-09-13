@@ -22,6 +22,7 @@ import fieldSalesRoutes from './api/field-sales/routes';
 import fieldMarketingRoutes from './api/field-marketing/routes';
 import promotionsRoutes from './api/promotions/routes';
 import reportingRoutes from './api/reporting/routes';
+// import aiAnalyticsRoutes from './api/ai-analytics';
 
 // Initialize Express app
 const app = express();
@@ -151,6 +152,7 @@ app.use('/api/field-sales', authMiddleware, tenantMiddleware, fieldSalesRoutes);
 app.use('/api/field-marketing', authMiddleware, tenantMiddleware, fieldMarketingRoutes);
 app.use('/api/promotions', authMiddleware, tenantMiddleware, promotionsRoutes);
 app.use('/api/reporting', authMiddleware, tenantMiddleware, reportingRoutes);
+// app.use('/api/ai-analytics', authMiddleware, tenantMiddleware, aiAnalyticsRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

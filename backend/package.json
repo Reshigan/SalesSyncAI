@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.4.2",
+    "@tensorflow/tfjs-node": "^4.22.0",
     "@types/bcrypt": "^6.0.0",
     "axios": "^1.5.0",
     "bcrypt": "^6.0.0",
@@ -46,7 +47,7 @@
     "@types/express": "^4.17.17",
     "@types/jest": "^29.5.5",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/multer": "^1.4.7",
+    "@types/multer": "^1.4.13",
     "@types/node": "^20.6.3",
     "@types/swagger-jsdoc": "^6.0.1",
     "@types/swagger-ui-express": "^4.1.4",
