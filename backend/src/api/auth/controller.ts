@@ -68,8 +68,8 @@ export class AuthController {
       { expiresIn: '7d' }
     );
 
-    // Store refresh token in Redis
-    await redis.setEx(`refresh_token:${user.id}`, 7 * 24 * 60 * 60, refreshToken);
+    // Store refresh token in Redis (disabled for now)
+    // await redis.setEx(`refresh_token:${user.id}`, 7 * 24 * 60 * 60, refreshToken);
 
     // Update last login
     await prisma.user.update({

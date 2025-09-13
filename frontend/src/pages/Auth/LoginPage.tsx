@@ -68,11 +68,11 @@ const LoginPage: React.FC = () => {
   };
 
   const demoCredentials = [
-    { role: 'Super Admin', email: 'superadmin@salessync.com', password: 'SuperAdmin123!' },
-    { role: 'Company Admin', email: 'admin@testcompany.com', password: 'TestAdmin123!' },
-    { role: 'Sales Agent', email: 'sales.agent@testcompany.com', password: 'SalesAgent123!' },
-    { role: 'Marketing Agent', email: 'marketing.agent@testcompany.com', password: 'MarketingAgent123!' },
-    { role: 'Promoter', email: 'promoter@testcompany.com', password: 'Promoter123!' },
+    { role: 'Super Admin', email: 'superadmin@salessync.com', password: 'admin123' },
+    { role: 'Company Admin', email: 'admin@testcompany.com', password: 'admin123' },
+    { role: 'Field Sales Agent', email: 'agent@testcompany.com', password: 'admin123' },
+    { role: 'Marketing Agent', email: 'marketing@testcompany.com', password: 'admin123' },
+    { role: 'Promoter', email: 'promoter@testcompany.com', password: 'admin123' },
   ];
 
   const fillDemoCredentials = (email: string, password: string) => {
