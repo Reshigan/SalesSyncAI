@@ -28,8 +28,7 @@
   },
   "include": [
     "src/**/*",
-    "src/types/**/*",
-    "prisma/seed.ts"
+    "src/types/**/*"
   ],
   "typeRoots": [
     "node_modules/@types",

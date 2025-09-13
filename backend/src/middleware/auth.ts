@@ -16,7 +16,7 @@ export interface AuthenticatedRequest extends Request {
 }
 
 export interface JWTPayload {
-  userId: string;
+  id: string;
   email: string;
   role: string;
   companyId: string;
@@ -49,7 +49,7 @@ export const authMiddleware = async (
       // Verify user still exists and is active
       const user = await prisma.user.findFirst({
         where: {
-          id: decoded.userId,
+          id: decoded.id,
           isActive: true
         },
         include: {
@@ -173,3 +173,6 @@ export const optionalAuth = async (
     next();
   }
 };
+
+// Alias for compatibility
+export const authenticateToken = authMiddleware;

@@ -1,79 +1,20 @@
-import express from 'express';
+import { Router } from 'express';
 import { requireRole } from '../../middleware/auth';
+import activationsRouter from './activations';
 
-const router = express.Router();
+const router = Router();
+
+/**
+ * @swagger
+ * tags:
+ *   name: Promotions
+ *   description: Campaign activation management and execution
+ */
 
 // Promotions routes - accessible by promoters and managers
 router.use(requireRole(['PROMOTER', 'SENIOR_AGENT', 'TEAM_LEADER', 'AREA_MANAGER', 'REGIONAL_MANAGER', 'COMPANY_ADMIN']));
 
-/**
- * @swagger
- * /api/promotions/activations:
- *   get:
- *     summary: Get assigned activations
- *     tags: [Promotions]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Activations retrieved successfully
- */
-router.get('/activations', (req, res) => {
-  res.json({
-    success: true,
-    data: [],
-    message: 'Promotions routes - Coming soon'
-  });
-});
-
-/**
- * @swagger
- * /api/promotions/activations/{id}/start:
- *   post:
- *     summary: Start activation
- *     tags: [Promotions]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Activation started successfully
- */
-router.post('/activations/:id/start', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Promotions routes - Coming soon'
-  });
-});
-
-/**
- * @swagger
- * /api/promotions/activations/{id}/complete:
- *   post:
- *     summary: Complete activation
- *     tags: [Promotions]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Activation completed successfully
- */
-router.post('/activations/:id/complete', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Promotions routes - Coming soon'
-  });
-});
+// Mount promotions sub-routes
+router.use('/activations', activationsRouter);
 
 export default router;

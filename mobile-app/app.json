@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "SalesSync",
+    "slug": "salessync-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1E3A8A"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.salessync.mobile",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "SalesSync needs location access to track field visits and verify agent locations.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "SalesSync needs location access to track field visits and verify agent locations.",
+        "NSCameraUsageDescription": "SalesSync needs camera access to capture photos during visits and surveys.",
+        "NSPhotoLibraryUsageDescription": "SalesSync needs photo library access to select and upload images."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1E3A8A"
+      },
+      "package": "com.salessync.mobile",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow SalesSync to use your location to track field visits and verify agent locations."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow SalesSync to access your camera to capture photos during visits and surveys."
+        }
+      ]
+    ]
+  }
+}
