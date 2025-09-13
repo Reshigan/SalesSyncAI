@@ -19,7 +19,19 @@
     "docker:build": "docker-compose build",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "deploy": "./deployment/scripts/deploy.sh"
+    "deploy": "./deployment/scripts/deploy.sh",
+    "deploy:prod": "./scripts/deploy-production.sh",
+    "deploy:prod:seed": "./scripts/deploy-production.sh --seed",
+    "publish": "./scripts/auto-publish.sh",
+    "publish:msg": "./scripts/auto-publish.sh",
+    "docker:prod:up": "docker-compose -f docker-compose.prod.yml up -d",
+    "docker:prod:down": "docker-compose -f docker-compose.prod.yml down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:prod:logs": "docker-compose -f docker-compose.prod.yml logs -f",
+    "backup:db": "docker exec salessync-postgres pg_dump -U salessync_user salessync > backup-$(date +%Y%m%d-%H%M%S).sql",
+    "backup:prod:db": "docker exec salessync-postgres-prod pg_dump -U salessync_user salessync_prod > backup-prod-$(date +%Y%m%d-%H%M%S).sql",
+    "health:check": "curl -f http://localhost:12000/health && curl -f http://localhost:12001/health",
+    "health:prod": "curl -f http://localhost:3000/health && curl -f http://localhost/health"
   },
   "keywords": [
     "field-marketing",

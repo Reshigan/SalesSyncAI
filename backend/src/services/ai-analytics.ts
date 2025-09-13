@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import * as tf from '@tensorflow/tfjs-node';
+// import * as tf from '@tensorflow/tfjs-node'; // Temporarily disabled for production stability
 import sharp from 'sharp';
 import axios from 'axios';
 
@@ -59,8 +59,8 @@ export interface PhotoQualityAnalysis {
 }
 
 export class AIAnalyticsService {
-  private brandModel: tf.LayersModel | null = null;
-  private objectDetectionModel: tf.LayersModel | null = null;
+  // private brandModel: tf.LayersModel | null = null;
+  // private objectDetectionModel: tf.LayersModel | null = null;
 
   constructor() {
     this.initializeModels();

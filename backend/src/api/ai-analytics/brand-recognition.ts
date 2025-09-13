@@ -36,14 +36,7 @@ router.post('/detect', authenticateToken, upload.single('image'), async (req: Re
     
     // Get company brands for recognition
     const company = await prisma.company.findUnique({
-      where: { id: user.companyId },
-      include: {
-        campaigns: {
-          include: {
-            products: true
-          }
-        }
-      }
+      where: { id: user.companyId }
     });
 
     if (!company) {
@@ -53,13 +46,16 @@ router.post('/detect', authenticateToken, upload.single('image'), async (req: Re
       });
     }
 
-    // Extract brand names from company campaigns and products
+    // Get products for brand recognition
+    const products = await prisma.product.findMany({
+      where: { companyId: user.companyId }
+    });
+
+    // Extract brand names from products
     const brandNames = new Set<string>();
-    company.campaigns.forEach(campaign => {
-      if (campaign.name) brandNames.add(campaign.name);
-      campaign.products.forEach(product => {
-        if (product.name) brandNames.add(product.name);
-      });
+    products.forEach(product => {
+      if (product.name) brandNames.add(product.name);
+      if (product.brand) brandNames.add(product.brand);
     });
 
     const companyBrands = Array.from(brandNames);
@@ -320,7 +316,7 @@ router.get('/trends', authenticateToken, async (req: Request, res: Response) => 
       .map(trend => ({
         period: trend.period,
         totalRecognitions: trend.totalRecognitions,
-        brands: Array.from(trend.brands.values()).map(brand => ({
+        brands: Array.from(trend.brands.values()).map((brand: any) => ({
           name: brand.name,
           count: brand.count,
           avgConfidence: brand.totalConfidence / brand.count
