@@ -1,0 +1,42 @@
+{
+  "name": "salessync",
+  "version": "1.0.0",
+  "description": "Multi-Tenant Field Marketing Platform",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "cd backend && npm test",
+    "test:frontend": "cd frontend && npm test",
+    "migrate": "cd backend && npm run migrate",
+    "seed": "cd backend && npm run seed",
+    "start": "cd backend && npm start",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "deploy": "./deployment/scripts/deploy.sh"
+  },
+  "keywords": [
+    "field-marketing",
+    "sales",
+    "multi-tenant",
+    "mobile",
+    "analytics",
+    "emerging-markets"
+  ],
+  "author": "SalesSync Team",
+  "license": "PROPRIETARY",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "workspaces": [
+    "backend",
+    "frontend",
+    "mobile"
+  ]
+}

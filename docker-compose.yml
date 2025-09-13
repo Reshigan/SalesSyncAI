@@ -1,0 +1,102 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgis/postgis:14-3.2
+    container_name: salessync-postgres
+    environment:
+      POSTGRES_DB: salessync
+      POSTGRES_USER: salessync
+      POSTGRES_PASSWORD: salessync_password
+      POSTGRES_MULTIPLE_EXTENSIONS: postgis,uuid-ossp
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deployment/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - salessync-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: salessync-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - salessync-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: salessync-backend
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://salessync:salessync_password@postgres:5432/salessync
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      PORT: 3000
+    ports:
+      - "12000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - salessync-network
+    command: npm run dev
+
+  # Frontend Web App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: salessync-frontend
+    environment:
+      REACT_APP_API_URL: http://localhost:12000/api
+      REACT_APP_ENVIRONMENT: development
+    ports:
+      - "12001:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - salessync-network
+    command: npm run dev
+
+  # AI Services
+  ai-services:
+    build:
+      context: ./ai-services
+      dockerfile: Dockerfile
+    container_name: salessync-ai
+    environment:
+      PYTHON_ENV: development
+      DATABASE_URL: postgresql://salessync:salessync_password@postgres:5432/salessync
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./ai-services:/app
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - salessync-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  salessync-network:
+    driver: bridge
