@@ -1,3 +1,4 @@
+
 # SalesSync - Multi-Tenant Field Marketing Platform
 
 **Tagline**: "Sync Your Success in the Field"
