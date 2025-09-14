@@ -12,8 +12,8 @@ DOMAIN="SSAI.gonxt.tech"
 INSTALL_DIR="/opt/salessync"
 DB_NAME="salessync_production"
 DB_USER="salessync_user"
-DB_PASSWORD=$(openssl rand -base64 32)
-REDIS_PASSWORD=$(openssl rand -base64 32)
+DB_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
+REDIS_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
 JWT_SECRET=$(openssl rand -base64 64)
 
 # Colors for output
@@ -204,12 +204,30 @@ install_redis() {
     # Configure Redis
     REDIS_CONFIG="/etc/redis/redis.conf"
     
-    # Set password
-    sed -i "s/# requirepass foobared/requirepass $REDIS_PASSWORD/" "$REDIS_CONFIG"
+    # Backup original config
+    cp "$REDIS_CONFIG" "$REDIS_CONFIG.backup"
+    
+    # Set password (handle both commented and uncommented versions)
+    if grep -q "^requirepass" "$REDIS_CONFIG"; then
+        sed -i "s/^requirepass.*/requirepass ${REDIS_PASSWORD}/" "$REDIS_CONFIG"
+    elif grep -q "^# requirepass" "$REDIS_CONFIG"; then
+        sed -i "s/^# requirepass.*/requirepass ${REDIS_PASSWORD}/" "$REDIS_CONFIG"
+    else
+        echo "requirepass ${REDIS_PASSWORD}" >> "$REDIS_CONFIG"
+    fi
     
     # Configure for production
-    sed -i "s/# maxmemory <bytes>/maxmemory 256mb/" "$REDIS_CONFIG"
-    sed -i "s/# maxmemory-policy noeviction/maxmemory-policy allkeys-lru/" "$REDIS_CONFIG"
+    if grep -q "^# maxmemory <bytes>" "$REDIS_CONFIG"; then
+        sed -i "s/^# maxmemory <bytes>/maxmemory 256mb/" "$REDIS_CONFIG"
+    elif ! grep -q "^maxmemory" "$REDIS_CONFIG"; then
+        echo "maxmemory 256mb" >> "$REDIS_CONFIG"
+    fi
+    
+    if grep -q "^# maxmemory-policy noeviction" "$REDIS_CONFIG"; then
+        sed -i "s/^# maxmemory-policy noeviction/maxmemory-policy allkeys-lru/" "$REDIS_CONFIG"
+    elif ! grep -q "^maxmemory-policy" "$REDIS_CONFIG"; then
+        echo "maxmemory-policy allkeys-lru" >> "$REDIS_CONFIG"
+    fi
     
     # Start and enable Redis
     systemctl start redis-server
@@ -642,7 +660,7 @@ BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/he
 DB_STATUS=$(sudo -u postgres psql -d salessync_production -c "SELECT 1;" > /dev/null 2>&1 && echo "OK" || echo "ERROR")
 
 # Check Redis
-REDIS_STATUS=$(redis-cli -a "$REDIS_PASSWORD" ping 2>/dev/null || echo "ERROR")
+REDIS_STATUS=$(redis-cli -a "${REDIS_PASSWORD}" ping 2>/dev/null || echo "ERROR")
 
 # Check disk space
 DISK_USAGE=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')

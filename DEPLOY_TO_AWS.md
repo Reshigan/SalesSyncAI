@@ -4,15 +4,29 @@
 
 Deploy SalesSync to your AWS server with a single command:
 
+### Option 1: Quick Install (Recommended)
 ```bash
 # 1. SSH to your AWS server
 ssh ubuntu@13.247.192.46
 
-# 2. Download and run the installer
+# 2. Download and run the quick installer
+curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/quick-install.sh -o quick-install.sh
+sudo chmod +x quick-install.sh
+sudo ./quick-install.sh
+```
+
+### Option 2: Full Featured Install
+```bash
+# 1. SSH to your AWS server
+ssh ubuntu@13.247.192.46
+
+# 2. Download and run the full installer
 curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/install-from-github.sh -o install-salessync.sh
 sudo chmod +x install-salessync.sh
 sudo ./install-salessync.sh
 ```
+
+**Difference**: Quick install uses simpler configuration and is more reliable. Full install has advanced security features and monitoring.
 
 ## What This Script Does
 
