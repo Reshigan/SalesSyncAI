@@ -27,11 +27,11 @@ export type RootStackParamList = {
   Login: undefined;
   Dashboard: undefined;
   VisitPlan: undefined;
-  VisitExecution: { visitId: string };
+  VisitExecution: { visitId: string; visit?: any };
   CampaignList: undefined;
-  CampaignExecution: { campaignId: string };
+  CampaignExecution: { campaignId: string; campaign?: any };
   ActivationList: undefined;
-  ActivationExecution: { activationId: string };
+  ActivationExecution: { activationId: string; activation?: any };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "SalesSync",
-    "slug": "salessync-mobile",
+    "name": "SalesSyncAI",
+    "slug": "salessyncai-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,12 +16,14 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.salessync.mobile",
+      "bundleIdentifier": "com.salessyncai.mobile",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "SalesSync needs location access to track field visits and verify agent locations.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "SalesSync needs location access to track field visits and verify agent locations.",
-        "NSCameraUsageDescription": "SalesSync needs camera access to capture photos during visits and surveys.",
-        "NSPhotoLibraryUsageDescription": "SalesSync needs photo library access to select and upload images."
+        "NSLocationWhenInUseUsageDescription": "SalesSyncAI needs location access to track field visits and verify agent locations for accurate reporting.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "SalesSyncAI needs location access to track field visits and verify agent locations for accurate reporting.",
+        "NSCameraUsageDescription": "SalesSyncAI needs camera access to capture photos during visits, surveys, and campaign activations.",
+        "NSPhotoLibraryUsageDescription": "SalesSyncAI needs photo library access to select and upload images for reports and documentation.",
+        "NSMicrophoneUsageDescription": "SalesSyncAI may need microphone access for voice notes and recordings during field activities."
       }
     },
     "android": {
@@ -29,13 +31,19 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1E3A8A"
       },
-      "package": "com.salessync.mobile",
+      "package": "com.salessyncai.mobile",
+      "versionCode": 1,
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "WRITE_EXTERNAL_STORAGE",
+        "RECORD_AUDIO",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "WAKE_LOCK"
       ]
     },
     "web": {
@@ -45,15 +53,41 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow SalesSync to use your location to track field visits and verify agent locations."
+          "locationAlwaysAndWhenInUsePermission": "Allow SalesSyncAI to use your location to track field visits and verify agent locations for accurate reporting.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow SalesSync to access your camera to capture photos during visits and surveys."
+          "cameraPermission": "Allow SalesSyncAI to access your camera to capture photos during visits, surveys, and campaign activations."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow SalesSyncAI to access your photo library to select and upload images for reports and documentation."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#1E3A8A",
+          "sounds": ["./assets/notification.wav"]
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "salessyncai-mobile-project"
+      }
+    },
+    "owner": "salessyncai",
+    "privacy": "public",
+    "description": "SalesSyncAI Mobile - Complete field sales, marketing campaigns, and activation management solution with AI-powered insights and offline capabilities.",
+    "keywords": ["sales", "marketing", "field", "crm", "mobile", "offline", "ai"],
+    "githubUrl": "https://github.com/Reshigan/SalesSyncAI"
   }
 }
