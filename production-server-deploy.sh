@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# SalesSyncAI Production Server Deployment Script
-# Single command deployment for production servers
+# SalesSyncAI Production Server Deployment Script v2
+# Fixed version that handles directory cleanup properly
 # Run this script directly on your production server
 
 set -e
@@ -57,6 +57,9 @@ else
     SUDO="sudo"
 fi
 
+# Ensure we're in a safe directory before starting
+cd "$HOME_DIR" || cd /tmp
+
 section "🚀 SALESSYNC PRODUCTION SERVER DEPLOYMENT"
 log "This script will deploy SalesSyncAI to your production server"
 log ""
@@ -103,8 +106,8 @@ safe_remove() {
         
         # Stop any Docker containers
         if [ -f "$dir/docker-compose.yml" ] || [ -f "$dir/docker-compose.prod.yml" ]; then
-            cd "$dir" && docker-compose down 2>/dev/null || true
-            cd "$dir" && docker-compose -f docker-compose.prod.yml down 2>/dev/null || true
+            (cd "$dir" && docker-compose down 2>/dev/null) || true
+            (cd "$dir" && docker-compose -f docker-compose.prod.yml down 2>/dev/null) || true
         fi
         
         # Remove the directory
@@ -131,6 +134,9 @@ pm2 kill 2>/dev/null || true
 $SUDO rm -f /etc/nginx/sites-enabled/salessync* 2>/dev/null || true
 $SUDO rm -f /etc/nginx/sites-available/salessync* 2>/dev/null || true
 
+# Ensure we're in a valid directory after cleanup
+cd "$HOME_DIR" || cd /tmp
+
 section "📦 SYSTEM SETUP: Installing Dependencies"
 
 # Set environment variables to avoid prompts
@@ -149,6 +155,25 @@ $SUDO apt-get install -y curl wget git unzip software-properties-common apt-tran
 # Install Node.js 20 LTS
 log "📦 Installing Node.js 20 LTS..."
 if ! command -v node &> /dev/null || [[ $(node --version | sed 's/v\([0-9]*\).*/\1/') -lt 18 ]]; then
+    # Remove any existing Node.js installations that might be corrupted
+    $SUDO apt-get remove -y nodejs npm 2>/dev/null || true
+    $SUDO rm -rf /usr/lib/node_modules 2>/dev/null || true
+    
+    # Install fresh Node.js
+    curl -fsSL https://deb.nodesource.com/setup_20.x | $SUDO bash - > /dev/null 2>&1
+    $SUDO apt-get install -y nodejs > /dev/null 2>&1
+    
+    # Verify installation
+    if ! command -v node &> /dev/null; then
+        error "Node.js installation failed"
+    fi
+fi
+
+# Fix npm if it's broken
+if ! npm --version > /dev/null 2>&1; then
+    log "🔧 Fixing npm installation..."
+    $SUDO apt-get remove -y nodejs npm 2>/dev/null || true
+    $SUDO apt-get autoremove -y 2>/dev/null || true
     curl -fsSL https://deb.nodesource.com/setup_20.x | $SUDO bash - > /dev/null 2>&1
     $SUDO apt-get install -y nodejs > /dev/null 2>&1
 fi
@@ -181,10 +206,16 @@ fi
 $SUDO systemctl start nginx
 $SUDO systemctl enable nginx
 
-# Install PM2
+# Install PM2 (with error handling)
 log "⚙️ Installing PM2..."
 if ! command -v pm2 &> /dev/null; then
-    npm install -g pm2 > /dev/null 2>&1
+    # Ensure we're in a valid directory for npm install
+    cd "$HOME_DIR"
+    npm install -g pm2 > /dev/null 2>&1 || {
+        warning "PM2 installation failed, retrying..."
+        sleep 2
+        npm install -g pm2 > /dev/null 2>&1
+    }
 fi
 
 section "🏗️ APPLICATION SETUP: Deploying SalesSyncAI"
@@ -196,7 +227,11 @@ cd "$APP_DIR"
 
 # Clone repository
 log "📥 Cloning SalesSyncAI repository..."
-git clone https://github.com/Reshigan/SalesSyncAI.git . > /dev/null 2>&1
+if [ -d ".git" ]; then
+    git pull origin main > /dev/null 2>&1
+else
+    git clone https://github.com/Reshigan/SalesSyncAI.git . > /dev/null 2>&1
+fi
 
 # Wait for PostgreSQL to be ready
 log "⏳ Waiting for PostgreSQL to be ready..."
@@ -226,7 +261,13 @@ $SUDO systemctl restart redis-server
 # Setup backend
 log "🔧 Setting up backend..."
 cd "$APP_DIR/backend"
-npm ci --only=production > /dev/null 2>&1
+
+# Install backend dependencies with error handling
+log "📦 Installing backend dependencies..."
+if ! npm ci --only=production > /dev/null 2>&1; then
+    warning "npm ci failed, trying npm install..."
+    npm install --only=production > /dev/null 2>&1
+fi
 
 # Create environment file
 cat > .env << EOF
@@ -260,7 +301,13 @@ fi
 # Setup frontend
 log "🎨 Setting up frontend..."
 cd "$APP_DIR/frontend"
-npm ci --only=production > /dev/null 2>&1
+
+# Install frontend dependencies with error handling
+log "📦 Installing frontend dependencies..."
+if ! npm ci --only=production > /dev/null 2>&1; then
+    warning "npm ci failed, trying npm install..."
+    npm install --only=production > /dev/null 2>&1
+fi
 
 # Create frontend environment
 cat > .env.production << EOF
