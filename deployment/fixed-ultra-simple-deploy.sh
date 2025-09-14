@@ -73,8 +73,24 @@ cd $APP_DIR/backend
 # Install dependencies
 npm install
 
-# Create production environment file
+# Set up environment variables
+export DATABASE_URL="postgresql://salessync_user:salessync_password@localhost:5432/salessync_production"
+export JWT_SECRET="ultra-secure-jwt-secret-for-production-$(date +%s)"
+export NODE_ENV="production"
+export PORT="3000"
+export CORS_ORIGIN="http://SSAI.gonxt.tech,http://localhost"
+
+# Create production environment file in root
 cat > .env << EOF
+NODE_ENV=production
+PORT=3000
+DATABASE_URL="postgresql://salessync_user:salessync_password@localhost:5432/salessync_production"
+JWT_SECRET="ultra-secure-jwt-secret-for-production-$(date +%s)"
+CORS_ORIGIN="http://SSAI.gonxt.tech,http://localhost"
+EOF
+
+# Create production environment file in backend
+cat > backend/.env << EOF
 NODE_ENV=production
 PORT=3000
 DATABASE_URL="postgresql://salessync_user:salessync_password@localhost:5432/salessync_production"

@@ -80,7 +80,23 @@ npm install
 
 # Set up environment
 echo -e "${YELLOW}⚙️ Setting up environment...${NC}"
+export DATABASE_URL="postgresql://salessync_user:salessync_password@localhost:5432/salessync_production"
+export JWT_SECRET="your-super-secret-jwt-key-change-in-production"
+export NODE_ENV="production"
+export PORT="3001"
+export CORS_ORIGIN="http://$DOMAIN"
+
+# Create .env file in root
 cat > .env << EOF
+NODE_ENV=production
+PORT=3001
+DATABASE_URL="postgresql://salessync_user:salessync_password@localhost:5432/salessync_production"
+JWT_SECRET="your-super-secret-jwt-key-change-in-production"
+CORS_ORIGIN="http://$DOMAIN"
+EOF
+
+# Create .env file in backend directory
+cat > backend/.env << EOF
 NODE_ENV=production
 PORT=3001
 DATABASE_URL="postgresql://salessync_user:salessync_password@localhost:5432/salessync_production"

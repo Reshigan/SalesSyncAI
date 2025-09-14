@@ -72,35 +72,43 @@ SalesSync is a comprehensive multi-tenant field marketing platform designed for 
 ### Ultra-Simple Deployment (5 minutes)
 Deploy SalesSync to production with a single command:
 
-#### Option 1: Fully Non-Interactive Deployment (Recommended)
-**Zero prompts guaranteed - completely automated:**
+#### Option 1: V5 - Ultimate Zero-Prompt Deployment (Recommended)
+**All fixes included - environment variables, Prisma paths, zero prompts:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v5.sh | sudo bash
+```
+
+#### Option 2: V4 - Zero Prompts Deployment
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v4.sh | sudo bash
 ```
 
-#### Option 2: Non-Interactive with debconf
+#### Option 3: V3 - Non-Interactive with debconf
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v3.sh | sudo bash
 ```
 
-#### Option 3: NPM Conflict Fix
+#### Option 4: V2 - NPM Conflict Fix
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v2.sh | sudo bash
 ```
 
-#### Option 4: Standard Deployment
+#### Option 5: V1 - Standard Deployment
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/fixed-ultra-simple-deploy.sh | sudo bash
 ```
 
-**The V4 script (recommended) features:**
-- Installs Node.js BEFORE PostgreSQL to avoid conflicts
-- Uses specific PostgreSQL 15 packages (no upgrades)
-- Multiple environment variables to disable all prompts
-- Eliminates debconf configuration errors
-- Guaranteed zero-interaction deployment
+**The V5 script (recommended) features:**
+- ✅ Fixed environment variable issues (DATABASE_URL available for Prisma)
+- ✅ Fixed Prisma schema path issues (runs from backend directory)
+- ✅ Installs Node.js BEFORE PostgreSQL to avoid conflicts
+- ✅ Uses specific PostgreSQL 15 packages (no upgrades)
+- ✅ Multiple environment variables to disable all prompts
+- ✅ Eliminates debconf configuration errors
+- ✅ Creates .env files in both root and backend directories
+- ✅ Guaranteed zero-interaction deployment
 
-**Both scripts will:**
+**All deployment scripts will:**
 - Install all system dependencies (Node.js, PostgreSQL, Nginx, PM2)
 - Set up the database with production data
 - Build and deploy the frontend
