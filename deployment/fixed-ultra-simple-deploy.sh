@@ -83,11 +83,13 @@ CORS_ORIGIN="http://SSAI.gonxt.tech,http://localhost"
 EOF
 
 # Run database migrations
+cd backend
 npx prisma generate
 npx prisma migrate deploy
 
 # Seed database with production data
 npx prisma db seed
+cd ..
 
 # Build frontend
 echo -e "${YELLOW}🎨 Building frontend...${NC}"

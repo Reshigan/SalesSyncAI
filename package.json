@@ -50,5 +50,8 @@
     "backend",
     "frontend",
     "mobile"
-  ]
+  ],
+  "prisma": {
+    "schema": "backend/prisma/schema.prisma"
+  }
 }

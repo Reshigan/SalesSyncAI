@@ -105,9 +105,11 @@ EOF
 
 # Run database migrations and seed
 echo -e "${YELLOW}🗄️ Setting up database schema and data...${NC}"
+cd backend
 npx prisma generate
 npx prisma db push --force-reset
 npx prisma db seed
+cd ..
 
 # Build frontend
 echo -e "${YELLOW}🏗️ Building frontend...${NC}"
