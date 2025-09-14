@@ -75,8 +75,8 @@ log "  - SalesSyncAI application"
 log ""
 
 # Ask for confirmation
-read -p "Do you want to proceed with the deployment? (y/N): " -n 1 -r
-echo
+echo -n "Do you want to proceed with the deployment? (y/N): "
+read -r REPLY
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     log "Deployment cancelled."
     exit 0
