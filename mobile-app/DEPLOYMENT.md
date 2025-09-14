@@ -43,15 +43,23 @@ The app is pre-configured with production-ready settings:
 - **Bundle ID**: `com.salessyncai.mobile`
 - **App Name**: SalesSyncAI
 - **Version**: 1.0.0
+- **Production API**: `https://ssai.gonxt.tech/api`
 - **Permissions**: Location, Camera, Storage, etc.
 
-### 2. EAS Build Configuration (`eas.json`)
+### 2. Production Server Configuration
+The mobile app is configured to connect to the production server:
+- **Server URL**: `https://ssai.gonxt.tech`
+- **API Base URL**: `https://ssai.gonxt.tech/api`
+- **Environment**: Production
+- **Offline-First**: App works fully offline with automatic sync when online
+
+### 3. EAS Build Configuration (`eas.json`)
 Three build profiles are configured:
 - **development**: For development builds with dev client
 - **preview**: For internal testing (APK/IPA)
 - **production**: For app store submission (AAB/IPA)
 
-### 3. Store Metadata
+### 4. Store Metadata
 Pre-configured store listings are available in `/store-config/`:
 - `app-store-metadata.json` - iOS App Store listing
 - `google-play-metadata.json` - Google Play Store listing

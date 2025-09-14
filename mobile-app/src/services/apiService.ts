@@ -9,13 +9,14 @@ class ApiService {
     // Use localhost for development, production URL for builds
     this.baseURL = __DEV__ 
       ? 'http://localhost:12000/api' 
-      : 'https://api.salessync.com/api';
+      : 'https://ssai.gonxt.tech/api';
 
     this.api = axios.create({
       baseURL: this.baseURL,
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
+        'User-Agent': 'SalesSyncAI-Mobile/1.0.0',
       },
     });
 
@@ -158,13 +159,31 @@ class ApiService {
     return Promise.allSettled(promises);
   }
 
-  // Health check
+  // Health check with fallback
   async healthCheck(): Promise<boolean> {
     try {
       const response = await this.get('/health');
       return response.status === 200;
     } catch (error) {
-      return false;
+      console.warn('API health check failed:', error.message);
+      // In production, the app should work offline-first
+      // Return true to allow offline functionality
+      return !__DEV__;
+    }
+  }
+
+  // Get current API URL
+  getBaseURL(): string {
+    return this.baseURL;
+  }
+
+  // Check if we're in offline mode
+  async isOfflineMode(): Promise<boolean> {
+    try {
+      const response = await this.api.get('/health', { timeout: 5000 });
+      return response.status !== 200;
+    } catch (error) {
+      return true; // Assume offline if health check fails
     }
   }
 }

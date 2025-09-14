@@ -53,7 +53,7 @@ export class SyncService {
   constructor() {
     this.offlineStorage = OfflineStorageService.getInstance();
     this.notifications = NotificationService.getInstance();
-    this.baseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://api.salessync.com';
+    this.baseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://ssai.gonxt.tech';
     this.loadAuthToken();
   }
 
