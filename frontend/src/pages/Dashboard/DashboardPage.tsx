@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Grid,
@@ -17,104 +17,33 @@ import {
   LocationOn,
   Assessment,
 } from '@mui/icons-material';
+import toast from 'react-hot-toast';
 
 import { useAuth } from '../../contexts/AuthContext';
-
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  change?: string;
-  changeType?: 'positive' | 'negative' | 'neutral';
-  icon: React.ReactNode;
-  color: string;
-}
-
-const StatCard: React.FC<StatCardProps> = ({
-  title,
-  value,
-  change,
-  changeType = 'neutral',
-  icon,
-  color,
-}) => {
-  const getChangeColor = () => {
-    switch (changeType) {
-      case 'positive':
-        return 'success.main';
-      case 'negative':
-        return 'error.main';
-      default:
-        return 'text.secondary';
-    }
-  };
-
-  return (
-    <Card sx={{ height: '100%' }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Avatar sx={{ bgcolor: color, mr: 2 }}>
-            {icon}
-          </Avatar>
-          <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="h4" sx={{ fontWeight: 700 }}>
-              {value}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {title}
-            </Typography>
-          </Box>
-        </Box>
-        {change && (
-          <Typography
-            variant="body2"
-            sx={{ color: getChangeColor(), fontWeight: 500 }}
-          >
-            {change}
-          </Typography>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
+import StatCard from '../../components/Common/StatCard';
+import LoadingSpinner from '../../components/Common/LoadingSpinner';
+import { reportingService, DashboardStats } from '../../services/apiService';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
 
-  // Mock data - in real app, this would come from API
-  const stats = [
-    {
-      title: 'Total Sales',
-      value: 'R 2,847,392',
-      change: '+12.5% from last month',
-      changeType: 'positive' as const,
-      icon: <ShoppingCart />,
-      color: '#10B981',
-    },
-    {
-      title: 'Active Campaigns',
-      value: 8,
-      change: '3 ending this week',
-      changeType: 'neutral' as const,
-      icon: <Campaign />,
-      color: '#FB923C',
-    },
-    {
-      title: 'Visits Completed',
-      value: 1247,
-      change: '+8.2% from last week',
-      changeType: 'positive' as const,
-      icon: <LocationOn />,
-      color: '#3B82F6',
-    },
-    {
-      title: 'Active Agents',
-      value: 24,
-      change: '2 new this month',
-      changeType: 'positive' as const,
-      icon: <People />,
-      color: '#8B5CF6',
-    },
-  ];
+  useEffect(() => {
+    loadDashboardStats();
+  }, []);
+
+  const loadDashboardStats = async () => {
+    try {
+      setLoading(true);
+      const stats = await reportingService.getDashboardStats();
+      setDashboardStats(stats);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to load dashboard stats');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const recentActivities = [
     {
@@ -151,6 +80,10 @@ const DashboardPage: React.FC = () => {
     return 'Good evening';
   };
 
+  if (loading) {
+    return <LoadingSpinner message="Loading dashboard..." />;
+  }
+
   return (
     <Box>
       {/* Welcome Header */}
@@ -164,13 +97,62 @@ const DashboardPage: React.FC = () => {
       </Box>
 
       {/* Stats Grid */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {stats.map((stat, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
-            <StatCard {...stat} />
+      {dashboardStats && (
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Total Sales"
+              value={`R ${dashboardStats.totalSales.value.toLocaleString('en-ZA')}`}
+              change={{
+                value: dashboardStats.totalSales.change,
+                type: dashboardStats.totalSales.changeType,
+                label: 'vs last month',
+              }}
+              icon={<ShoppingCart />}
+              color="#4caf50"
+            />
           </Grid>
-        ))}
-      </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Active Campaigns"
+              value={dashboardStats.activeCampaigns.value}
+              change={{
+                value: dashboardStats.activeCampaigns.change,
+                type: dashboardStats.activeCampaigns.changeType,
+                label: 'vs last month',
+              }}
+              icon={<Campaign />}
+              color="#2196f3"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Visits Completed"
+              value={dashboardStats.visitsCompleted.value}
+              change={{
+                value: dashboardStats.visitsCompleted.change,
+                type: dashboardStats.visitsCompleted.changeType,
+                label: 'vs last month',
+              }}
+              icon={<LocationOn />}
+              color="#ff9800"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Active Agents"
+              value={dashboardStats.activeAgents.value}
+              change={{
+                value: dashboardStats.activeAgents.change,
+                type: dashboardStats.activeAgents.changeType,
+                label: 'vs last month',
+              }}
+              icon={<People />}
+              color="#9c27b0"
+            />
+          </Grid>
+        </Grid>
+      )}
 
       {/* Content Grid */}
       <Grid container spacing={3}>
