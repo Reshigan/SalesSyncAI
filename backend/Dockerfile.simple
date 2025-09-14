@@ -1,21 +1,20 @@
-# Production Dockerfile for SalesSync Backend
+# Simple Production Dockerfile for SalesSyncAI Backend (without canvas dependencies)
 FROM node:20-alpine AS builder
 
 # Set working directory
 WORKDIR /app
 
-# Install build dependencies
-RUN apk add --no-cache python3 make g++ pkgconfig cairo-dev pango-dev libjpeg-turbo-dev giflib-dev librsvg-dev
-
 # Copy package files
-COPY package*.json ./
+COPY package.simple.json package.json
 COPY prisma ./prisma/
 
 # Install all dependencies (including dev dependencies for build)
 RUN npm install && npm cache clean --force
 
-# Copy source code
-COPY . .
+# Copy minimal source code
+COPY src/index.minimal.ts src/index.ts
+COPY prisma ./prisma/
+COPY tsconfig.json ./
 
 # Generate Prisma client
 RUN npx prisma generate
@@ -27,7 +26,7 @@ RUN npm run build
 FROM node:20-alpine AS production
 
 # Install runtime dependencies
-RUN apk add --no-cache dumb-init curl python3 make g++ pkgconfig cairo pango libjpeg-turbo giflib librsvg
+RUN apk add --no-cache dumb-init curl openssl
 
 # Create app user
 RUN addgroup -g 1001 -S nodejs && \
@@ -37,11 +36,11 @@ RUN addgroup -g 1001 -S nodejs && \
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY package.simple.json package.json
 COPY prisma ./prisma/
 
 # Install only production dependencies
-RUN npm install --only=production && npm cache clean --force
+RUN npm install --omit=dev && npm cache clean --force
 
 # Generate Prisma client for production
 RUN npx prisma generate
