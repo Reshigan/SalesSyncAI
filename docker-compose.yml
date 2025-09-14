@@ -89,7 +89,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.prod
       args:
-        REACT_APP_API_URL: https://assai.gonxt.tech/api
+        REACT_APP_API_URL: https://ssai.gonxt.tech/api
     container_name: salessync-frontend
     restart: unless-stopped
     ports:
