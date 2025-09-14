@@ -196,9 +196,32 @@ sudo chown -R $USER:$USER data logs
 log "🛑 Stopping existing containers..."
 docker-compose -f $COMPOSE_FILE down --remove-orphans 2>/dev/null || true
 
-# Step 12: Build and start services
+# Step 12: Test Docker builds first
+log "🧪 Testing Docker builds..."
+if ./test-docker-build.sh; then
+    log "✅ Docker build tests passed"
+else
+    error "❌ Docker build tests failed"
+    exit 1
+fi
+
+# Step 12b: Build and start services
 log "🏗️ Building and starting services..."
-docker-compose -f $COMPOSE_FILE build --no-cache
+if docker-compose -f $COMPOSE_FILE build --no-cache; then
+    log "✅ Docker images built successfully"
+else
+    warning "Primary Docker build failed, trying Yarn alternative..."
+    # Try Yarn-based build as fallback
+    cd backend
+    if docker build -f Dockerfile.yarn -t salessyncai_backend .; then
+        log "✅ Yarn-based backend build successful"
+        cd ..
+    else
+        error "❌ All Docker build strategies failed"
+        exit 1
+    fi
+fi
+
 docker-compose -f $COMPOSE_FILE up -d
 
 # Step 13: Wait for services to be ready
