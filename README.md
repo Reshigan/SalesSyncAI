@@ -72,11 +72,23 @@ SalesSync is a comprehensive multi-tenant field marketing platform designed for 
 ### Ultra-Simple Deployment (5 minutes)
 Deploy SalesSync to production with a single command:
 
+#### Option 1: Standard Deployment
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/fixed-ultra-simple-deploy.sh | sudo bash
 ```
 
-This script will:
+#### Option 2: NPM Conflict Fix (Recommended for Ubuntu 22.04+)
+If you encounter npm dependency conflicts, use this version:
+```bash
+curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v2.sh | sudo bash
+```
+
+**The V2 script handles npm conflicts by:**
+- Removing conflicting packages first
+- Installing Node.js and npm from NodeSource cleanly
+- Ensuring proper dependency resolution
+
+**Both scripts will:**
 - Install all system dependencies (Node.js, PostgreSQL, Nginx, PM2)
 - Set up the database with production data
 - Build and deploy the frontend

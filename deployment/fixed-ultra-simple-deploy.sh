@@ -33,7 +33,15 @@ sleep 2
 # Install system dependencies
 echo -e "${YELLOW}📦 Installing system dependencies...${NC}"
 apt update -qq
-apt install -y nodejs npm postgresql postgresql-contrib nginx git curl
+
+# Install Node.js from NodeSource (includes npm)
+echo -e "${YELLOW}📦 Installing Node.js from NodeSource...${NC}"
+curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+apt install -y nodejs postgresql postgresql-contrib nginx git curl
+
+# Verify Node.js and npm installation
+echo -e "${GREEN}✅ Node.js version: $(node --version)${NC}"
+echo -e "${GREEN}✅ npm version: $(npm --version)${NC}"
 
 # Start PostgreSQL
 systemctl start postgresql
