@@ -72,21 +72,29 @@ SalesSync is a comprehensive multi-tenant field marketing platform designed for 
 ### Ultra-Simple Deployment (5 minutes)
 Deploy SalesSync to production with a single command:
 
-#### Option 1: Standard Deployment
+#### Option 1: Non-Interactive Deployment (Recommended)
+**No popups, all confirmations handled automatically:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/fixed-ultra-simple-deploy.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v3.sh | sudo bash
 ```
 
-#### Option 2: NPM Conflict Fix (Recommended for Ubuntu 22.04+)
-If you encounter npm dependency conflicts, use this version:
+#### Option 2: NPM Conflict Fix
+If you encounter npm dependency conflicts:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v2.sh | sudo bash
 ```
 
-**The V2 script handles npm conflicts by:**
-- Removing conflicting packages first
-- Installing Node.js and npm from NodeSource cleanly
-- Ensuring proper dependency resolution
+#### Option 3: Standard Deployment
+```bash
+curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/fixed-ultra-simple-deploy.sh | sudo bash
+```
+
+**The V3 script (recommended) features:**
+- Completely non-interactive deployment
+- No PostgreSQL upgrade popups
+- Pre-configured responses for all dialogs
+- Clean npm dependency resolution
+- Terminal-only confirmations
 
 **Both scripts will:**
 - Install all system dependencies (Node.js, PostgreSQL, Nginx, PM2)
