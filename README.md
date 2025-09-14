@@ -72,29 +72,33 @@ SalesSync is a comprehensive multi-tenant field marketing platform designed for 
 ### Ultra-Simple Deployment (5 minutes)
 Deploy SalesSync to production with a single command:
 
-#### Option 1: Non-Interactive Deployment (Recommended)
-**No popups, all confirmations handled automatically:**
+#### Option 1: Fully Non-Interactive Deployment (Recommended)
+**Zero prompts guaranteed - completely automated:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v4.sh | sudo bash
+```
+
+#### Option 2: Non-Interactive with debconf
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v3.sh | sudo bash
 ```
 
-#### Option 2: NPM Conflict Fix
-If you encounter npm dependency conflicts:
+#### Option 3: NPM Conflict Fix
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v2.sh | sudo bash
 ```
 
-#### Option 3: Standard Deployment
+#### Option 4: Standard Deployment
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/fixed-ultra-simple-deploy.sh | sudo bash
 ```
 
-**The V3 script (recommended) features:**
-- Completely non-interactive deployment
-- No PostgreSQL upgrade popups
-- Pre-configured responses for all dialogs
-- Clean npm dependency resolution
-- Terminal-only confirmations
+**The V4 script (recommended) features:**
+- Installs Node.js BEFORE PostgreSQL to avoid conflicts
+- Uses specific PostgreSQL 15 packages (no upgrades)
+- Multiple environment variables to disable all prompts
+- Eliminates debconf configuration errors
+- Guaranteed zero-interaction deployment
 
 **Both scripts will:**
 - Install all system dependencies (Node.js, PostgreSQL, Nginx, PM2)
