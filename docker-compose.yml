@@ -3,31 +3,43 @@ version: '3.8'
 services:
   # PostgreSQL Database
   postgres:
-    image: postgis/postgis:14-3.2
+    image: postgres:15-alpine
     container_name: salessync-postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: salessync
-      POSTGRES_USER: salessync
-      POSTGRES_PASSWORD: salessync_password
-      POSTGRES_MULTIPLE_EXTENSIONS: postgis,uuid-ossp
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${POSTGRES_DB:-salessync}
+      POSTGRES_USER: ${POSTGRES_USER:-salessync}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-salessync123}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./deployment/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./database/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
     networks:
       - salessync-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-salessync} -d ${POSTGRES_DB:-salessync}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   # Redis Cache
   redis:
     image: redis:7-alpine
     container_name: salessync-redis
-    ports:
-      - "6379:6379"
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis123}
     volumes:
       - redis_data:/data
+    ports:
+      - "6379:6379"
     networks:
       - salessync-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   # Backend API
   backend:
@@ -35,49 +47,105 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: salessync-backend
+    restart: unless-stopped
     environment:
-      NODE_ENV: development
-      DATABASE_URL: postgresql://salessync:salessync_password@postgres:5432/salessync
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: your-super-secret-jwt-key-change-in-production
-      PORT: 3000
-    ports:
-      - "12000:3000"
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-salessync}:${POSTGRES_PASSWORD:-salessync123}@postgres:5432/${POSTGRES_DB:-salessync}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-your-super-secret-refresh-key-change-this-in-production}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-your-32-character-encryption-key}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-salessync-uploads}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      FRONTEND_URL: https://assai.gonxt.tech
     volumes:
-      - ./backend:/app
-      - /app/node_modules
-    depends_on:
-      - postgres
-      - redis
+      - ./backend/uploads:/app/uploads
+      - ./backend/logs:/app/logs
+    ports:
+      - "3001:3001"
     networks:
       - salessync-network
-    command: npm run dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
-  # Frontend Web App
+  # Frontend
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
+      args:
+        REACT_APP_API_URL: https://assai.gonxt.tech/api
     container_name: salessync-frontend
-    environment:
-      REACT_APP_API_URL: http://localhost:12000/api
-      REACT_APP_ENVIRONMENT: development
+    restart: unless-stopped
     ports:
-      - "12001:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    depends_on:
-      - backend
+      - "3000:80"
     networks:
       - salessync-network
-    command: npm run dev
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health.html"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
+  # Nginx Reverse Proxy with SSL
+  nginx:
+    image: nginx:alpine
+    container_name: salessync-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./nginx/logs:/var/log/nginx
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    networks:
+      - salessync-network
+    depends_on:
+      - frontend
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
+  # Certbot for SSL certificates
+  certbot:
+    image: certbot/certbot
+    container_name: salessync-certbot
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/lib/letsencrypt:/var/lib/letsencrypt
+      - ./nginx/webroot:/var/www/certbot
+    command: certonly --webroot --webroot-path=/var/www/certbot --email admin@gonxt.tech --agree-tos --no-eff-email -d assai.gonxt.tech
+    networks:
+      - salessync-network
 
 volumes:
   postgres_data:
+    driver: local
   redis_data:
+    driver: local
 
 networks:
   salessync-network:

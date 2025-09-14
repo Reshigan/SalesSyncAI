@@ -1,21 +1,34 @@
-# SalesSyncAI Docker Deployment Guide
+# SalesSyncAI Production Deployment Guide
 
-This guide provides comprehensive instructions for deploying SalesSyncAI using Docker, with options for both quick deployment and home directory installation with cleanup.
+This guide provides comprehensive instructions for deploying SalesSyncAI in production on AWS t4g.medium Ubuntu server with SSL for domain `assai.gonxt.tech`, as well as development deployment options.
 
 ## 🚀 Quick Start
 
-### Option 1: Simple Docker Deployment (Current Directory)
+### Production Deployment (AWS t4g.medium Ubuntu Server)
+
+```bash
+# Clone the repository
+git clone https://github.com/Reshigan/SalesSyncAI.git /opt/salessync
+cd /opt/salessync
+
+# Run the production deployment script
+sudo ./scripts/deploy.sh
+```
+
+### Development Deployment Options
+
+#### Option 1: Simple Docker Deployment (Current Directory)
 
 ```bash
 # Clone the repository
 git clone https://github.com/Reshigan/SalesSyncAI.git
 cd SalesSyncAI
 
-# Run the deployment script
+# Run the development deployment script
 ./docker-deploy.sh
 ```
 
-### Option 2: Home Directory Deployment with Cleanup
+#### Option 2: Home Directory Deployment with Cleanup
 
 ```bash
 # Clone the repository
@@ -312,6 +325,286 @@ After successful deployment:
 4. Configure monitoring and alerting
 5. Set up automated backups
 6. Review and customize security settings
+
+---
+
+## 🏭 Production Deployment (AWS t4g.medium Ubuntu Server)
+
+### Production Prerequisites
+
+- **Server**: AWS t4g.medium instance (2 vCPU, 4 GB RAM)
+- **OS**: Ubuntu 20.04 LTS or later
+- **Storage**: At least 20 GB available disk space
+- **Domain**: `assai.gonxt.tech` pointing to server IP
+- **SSL**: Let's Encrypt certificates (automated)
+
+### Production Architecture
+
+The production deployment includes:
+
+1. **Frontend** (React + Nginx) - Port 80/443
+2. **Backend** (Node.js + Express) - Port 3001
+3. **Database** (PostgreSQL 15) - Port 5432
+4. **Cache** (Redis 7) - Port 6379
+5. **Reverse Proxy** (Nginx) - Port 80/443
+6. **SSL Certificates** (Let's Encrypt/Certbot)
+
+### Production Deployment Steps
+
+#### 1. Server Setup
+
+```bash
+# Update system
+sudo apt update && sudo apt upgrade -y
+
+# Install prerequisites
+sudo apt install -y curl git ufw fail2ban
+
+# Configure firewall
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow ssh
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable
+```
+
+#### 2. Automated Production Deployment
+
+```bash
+# Clone repository to production directory
+git clone https://github.com/Reshigan/SalesSyncAI.git /opt/salessync
+cd /opt/salessync
+
+# Run production deployment script
+sudo ./scripts/deploy.sh
+```
+
+The deployment script will:
+- Install Docker and Docker Compose
+- Set up firewall rules
+- Create necessary directories
+- Configure SSL certificates with Let's Encrypt
+- Deploy all services with production configuration
+- Set up monitoring and backup automation
+
+#### 3. Manual Production Configuration
+
+If you prefer manual setup:
+
+```bash
+# Install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker $USER
+
+# Configure environment
+cp .env.production .env
+nano .env  # Edit with your production values
+
+# Deploy services
+docker-compose build
+docker-compose up -d
+
+# Run database migrations
+docker-compose exec backend npx prisma migrate deploy
+```
+
+### Production Environment Configuration
+
+Edit `.env` with production values:
+
+```bash
+# Database Configuration
+POSTGRES_DB=salessync
+POSTGRES_USER=salessync
+POSTGRES_PASSWORD=your-secure-production-password
+
+# JWT Configuration
+JWT_SECRET=your-super-secure-jwt-secret-key-at-least-32-characters
+JWT_REFRESH_SECRET=your-super-secure-refresh-secret-key-at-least-32-characters
+
+# AWS Configuration
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your-aws-access-key-id
+AWS_SECRET_ACCESS_KEY=your-aws-secret-access-key
+S3_BUCKET_NAME=salessync-uploads-production
+
+# Email Configuration
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+
+# Application URLs
+FRONTEND_URL=https://assai.gonxt.tech
+BACKEND_URL=https://assai.gonxt.tech/api
+CORS_ORIGIN=https://assai.gonxt.tech
+
+# SSL Configuration
+SSL_EMAIL=admin@gonxt.tech
+DOMAIN=assai.gonxt.tech
+```
+
+### Production SSL Setup
+
+SSL certificates are automatically managed:
+
+```bash
+# Check SSL certificate status
+./scripts/ssl-renew.sh
+
+# Manual certificate renewal
+docker-compose run --rm certbot renew
+
+# View certificate details
+openssl x509 -in /etc/letsencrypt/live/assai.gonxt.tech/fullchain.pem -text -noout
+```
+
+### Production Monitoring
+
+#### Health Monitoring
+
+```bash
+# Basic health check
+./scripts/monitor.sh check
+
+# Full monitoring report
+./scripts/monitor.sh full
+
+# Restart failed services
+./scripts/monitor.sh restart
+```
+
+#### Application Access
+
+- **Production URL**: https://assai.gonxt.tech
+- **API Endpoint**: https://assai.gonxt.tech/api
+- **Health Check**: https://assai.gonxt.tech/health
+
+### Production Backup System
+
+#### Automated Backups
+
+Backups run automatically daily at 2 AM:
+
+```bash
+# Manual backup
+./scripts/backup.sh full
+
+# Database only
+./scripts/backup.sh database
+
+# Files only
+./scripts/backup.sh files
+```
+
+#### Backup Locations
+
+- **Local**: `/opt/salessync-backups/`
+- **S3**: `s3://salessync-backups-production/` (if configured)
+
+### Production Updates
+
+```bash
+# Update application
+./scripts/update.sh
+
+# Manual update process
+git pull origin main
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+### Production Troubleshooting
+
+#### Service Issues
+
+```bash
+# Check all services
+docker-compose ps
+
+# View service logs
+docker-compose logs -f [service]
+
+# Restart specific service
+docker-compose restart [service]
+```
+
+#### SSL Issues
+
+```bash
+# Check certificate expiry
+openssl x509 -enddate -noout -in /etc/letsencrypt/live/assai.gonxt.tech/fullchain.pem
+
+# Test SSL connection
+openssl s_client -servername assai.gonxt.tech -connect assai.gonxt.tech:443
+```
+
+#### Performance Issues
+
+```bash
+# Check system resources
+htop
+df -h
+free -h
+
+# Check Docker resource usage
+docker stats
+
+# Check application performance
+curl -w "@curl-format.txt" -o /dev/null -s https://assai.gonxt.tech
+```
+
+### Production Security
+
+- **Firewall**: UFW configured with minimal open ports
+- **SSL**: Strong TLS configuration with HSTS
+- **Headers**: Security headers configured in Nginx
+- **Rate Limiting**: API rate limiting enabled
+- **Fail2ban**: Intrusion prevention system active
+- **Updates**: Automated security updates enabled
+
+### Production Maintenance
+
+#### Automated Tasks (Cron Jobs)
+
+```bash
+# Health check every 5 minutes
+*/5 * * * * /opt/salessync/scripts/monitor.sh check
+
+# Daily backup at 2 AM
+0 2 * * * /opt/salessync/scripts/backup.sh full
+
+# SSL renewal check daily at 3 AM
+0 3 * * * /opt/salessync/scripts/ssl-renew.sh
+
+# Weekly full monitoring report
+0 6 * * 1 /opt/salessync/scripts/monitor.sh full
+```
+
+#### Manual Maintenance
+
+```bash
+# Clean up old Docker images
+docker system prune -f
+
+# Update system packages
+sudo apt update && sudo apt upgrade -y
+
+# Check log sizes
+du -sh /var/log/salessync/
+```
+
+### Production Support
+
+For production issues:
+
+1. Check monitoring logs: `/var/log/salessync/`
+2. Review application logs: `docker-compose logs`
+3. Verify SSL certificates: `./scripts/ssl-renew.sh`
+4. Check system resources: `./scripts/monitor.sh full`
+5. Contact support: admin@gonxt.tech
 
 ---
 
