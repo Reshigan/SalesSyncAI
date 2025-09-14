@@ -1,32 +1,27 @@
-# 🚀 Deploy SalesSync to AWS - One Command Installation
+# 🚀 Deploy SalesSync to AWS - Clean Server Installation
 
-## Quick Deployment
+## Production Deployment
 
-Deploy SalesSync to your AWS server with a single command:
+Deploy SalesSync to your AWS server with a single command on a clean Ubuntu 22.04 server:
 
-### Option 1: Quick Install (Recommended)
 ```bash
 # 1. SSH to your AWS server
 ssh ubuntu@13.247.192.46
 
-# 2. Download and run the quick installer
-curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/quick-install.sh -o quick-install.sh
-sudo chmod +x quick-install.sh
-sudo ./quick-install.sh
+# 2. Download and run the clean server installer
+curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/clean-server-deploy.sh -o clean-deploy.sh
+sudo chmod +x clean-deploy.sh
+sudo ./clean-deploy.sh
 ```
 
-### Option 2: Full Featured Install
-```bash
-# 1. SSH to your AWS server
-ssh ubuntu@13.247.192.46
+## Clean Installation Benefits
 
-# 2. Download and run the full installer
-curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/install-from-github.sh -o install-salessync.sh
-sudo chmod +x install-salessync.sh
-sudo ./install-salessync.sh
-```
-
-**Difference**: Quick install uses simpler configuration and is more reliable. Full install has advanced security features and monitoring.
+This deployment script provides a **clean server installation** that:
+- **Removes all conflicting packages** (Apache, MySQL, old Node.js, etc.)
+- **Fresh installations** of all components with optimized configurations
+- **Enhanced security hardening** with latest patches
+- **Production-grade performance** tuning
+- **Comprehensive monitoring** from day one
 
 ## What This Script Does
 
