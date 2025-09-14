@@ -1,0 +1,17 @@
+{
+  "name": "salessync-healthcheck",
+  "version": "1.0.0",
+  "description": "Health check service for SalesSync production deployment",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node healthcheck.js --test"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.0",
+    "node-cron": "^3.0.2"
+  },
+  "author": "SalesSync Team",
+  "license": "MIT"
+}

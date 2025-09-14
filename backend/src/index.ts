@@ -1,7 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import 'express-async-errors';
 import { PrismaClient } from '@prisma/client';
 import { createClient } from 'redis';
@@ -14,6 +12,23 @@ import { config } from './config/config';
 import { errorHandler } from './middleware/errorHandler';
 import { authMiddleware } from './middleware/auth';
 import { tenantMiddleware } from './middleware/tenant';
+
+// Import advanced middleware
+import { 
+  securityHeaders, 
+  rateLimitMiddleware, 
+  bruteForceProtection, 
+  ipFilteringMiddleware, 
+  suspiciousActivityMiddleware 
+} from './middleware/security';
+import { 
+  performanceMiddleware, 
+  errorTrackingMiddleware,
+  getSystemHealth,
+  getMetrics,
+  getErrorLogs,
+  getAlerts
+} from './middleware/monitoring';
 
 // Import route handlers
 import authRoutes from './api/auth/routes';
@@ -89,30 +104,25 @@ const swaggerOptions = {
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
-// Middleware
-app.use(helmet({
-  contentSecurityPolicy: false, // Disable for development
-  crossOriginEmbedderPolicy: false
-}));
+// Security middleware (applied first)
+app.use(securityHeaders());
+app.use(ipFilteringMiddleware());
+app.use(rateLimitMiddleware());
+app.use(bruteForceProtection());
+app.use(suspiciousActivityMiddleware());
 
+// Performance monitoring middleware
+app.use(performanceMiddleware());
+
+// CORS configuration
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://app.salessync.com', 'https://admin.salessync.com']
-    : true,
+    ? ['https://salessync.com', 'https://www.salessync.com', 'https://app.salessync.com', 'https://admin.salessync.com']
+    : ['http://localhost:3001', 'http://localhost:12001', 'http://localhost:12000'],
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID', 'X-Requested-With'],
 }));
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // Limit each IP to 1000 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-app.use(limiter);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -130,11 +140,135 @@ app.use(expressWinston.logger({
 }));
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'healthy', 
-    timestamp: new Date().toISOString(),
-    version: '1.0.0'
+app.get('/health', async (req, res) => {
+  try {
+    // Test database connection
+    await prisma.$queryRaw`SELECT 1`;
+    
+    res.status(200).json({ 
+      status: 'healthy', 
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      version: process.env.npm_package_version || '1.0.0',
+      environment: process.env.NODE_ENV || 'development',
+      instanceId: process.env.INSTANCE_ID || 'unknown',
+      database: 'connected',
+      memory: {
+        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
+      }
+    });
+  } catch (error) {
+    res.status(503).json({ 
+      status: 'unhealthy', 
+      timestamp: new Date().toISOString(),
+      error: 'Database connection failed',
+      uptime: process.uptime()
+    });
+  }
+});
+
+// System health endpoint (detailed)
+app.get('/api/system/health', async (req, res) => {
+  try {
+    const health = await getSystemHealth();
+    res.json(health);
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to get system health',
+      message: error.message 
+    });
+  }
+});
+
+// Performance metrics endpoint
+app.get('/metrics', (req, res) => {
+  try {
+    const metrics = getMetrics(100);
+    const alerts = getAlerts(false);
+    
+    // Convert to Prometheus format
+    let prometheusMetrics = '';
+    
+    // Request metrics
+    prometheusMetrics += '# HELP http_requests_total Total number of HTTP requests\n';
+    prometheusMetrics += '# TYPE http_requests_total counter\n';
+    prometheusMetrics += `http_requests_total ${metrics.length}\n\n`;
+    
+    // Response time metrics
+    if (metrics.length > 0) {
+      const avgResponseTime = metrics.reduce((sum, m) => sum + m.responseTime, 0) / metrics.length;
+      prometheusMetrics += '# HELP http_request_duration_ms Average HTTP request duration in milliseconds\n';
+      prometheusMetrics += '# TYPE http_request_duration_ms gauge\n';
+      prometheusMetrics += `http_request_duration_ms ${avgResponseTime.toFixed(2)}\n\n`;
+    }
+    
+    // Error rate
+    const errorCount = metrics.filter(m => m.statusCode >= 400).length;
+    const errorRate = metrics.length > 0 ? (errorCount / metrics.length) * 100 : 0;
+    prometheusMetrics += '# HELP http_error_rate_percent HTTP error rate percentage\n';
+    prometheusMetrics += '# TYPE http_error_rate_percent gauge\n';
+    prometheusMetrics += `http_error_rate_percent ${errorRate.toFixed(2)}\n\n`;
+    
+    // Memory usage
+    const memUsage = process.memoryUsage();
+    prometheusMetrics += '# HELP nodejs_memory_heap_used_bytes Node.js heap memory used in bytes\n';
+    prometheusMetrics += '# TYPE nodejs_memory_heap_used_bytes gauge\n';
+    prometheusMetrics += `nodejs_memory_heap_used_bytes ${memUsage.heapUsed}\n\n`;
+    
+    // Active alerts
+    prometheusMetrics += '# HELP system_alerts_active Number of active system alerts\n';
+    prometheusMetrics += '# TYPE system_alerts_active gauge\n';
+    prometheusMetrics += `system_alerts_active ${alerts.length}\n\n`;
+    
+    res.set('Content-Type', 'text/plain');
+    res.send(prometheusMetrics);
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to get metrics',
+      message: error.message 
+    });
+  }
+});
+
+// Error logs endpoint (admin only)
+app.get('/api/system/errors', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 50;
+    const errors = await getErrorLogs(limit);
+    res.json({ success: true, data: errors });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to get error logs',
+      message: error.message 
+    });
+  }
+});
+
+// System alerts endpoint (admin only)
+app.get('/api/system/alerts', (req, res) => {
+  try {
+    const resolved = req.query.resolved === 'true';
+    const alerts = getAlerts(resolved);
+    res.json({ success: true, data: alerts });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to get alerts',
+      message: error.message 
+    });
+  }
+});
+
+// Status endpoint for load balancer
+app.get('/status', (req, res) => {
+  res.json({ 
+    status: 'ok',
+    timestamp: Date.now(),
+    instance: process.env.INSTANCE_ID || 'unknown'
   });
 });
 
@@ -162,6 +296,9 @@ app.use('*', (req, res) => {
     path: req.originalUrl
   });
 });
+
+// Error tracking middleware (applied after routes)
+app.use(errorTrackingMiddleware());
 
 // Error handling middleware
 app.use(expressWinston.errorLogger({
