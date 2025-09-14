@@ -1,0 +1,196 @@
+{{!-- subject: 🚨 URGENT: Fraud Alert - {{agentName}} --}}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraud Alert</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .alert-header {
+            background-color: #FEF2F2;
+            border: 2px solid #FECACA;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .alert-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .alert-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #DC2626;
+            margin-bottom: 10px;
+        }
+        .alert-subtitle {
+            color: #7F1D1D;
+            font-size: 16px;
+        }
+        .risk-score {
+            background-color: #DC2626;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: inline-block;
+            margin: 10px 0;
+        }
+        .details-section {
+            background-color: #F9FAFB;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #DC2626;
+        }
+        .details-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1F2937;
+            margin-bottom: 15px;
+        }
+        .detail-item {
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #374151;
+            display: inline-block;
+            width: 120px;
+        }
+        .detail-value {
+            color: #6B7280;
+        }
+        .evidence-list {
+            background-color: #FFFBEB;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #FDE68A;
+            margin: 15px 0;
+        }
+        .evidence-item {
+            margin-bottom: 8px;
+            color: #92400E;
+        }
+        .action-required {
+            background-color: #FEF2F2;
+            border: 1px solid #FECACA;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .action-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #DC2626;
+            margin-bottom: 10px;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #DC2626;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #E5E7EB;
+            text-align: center;
+            color: #6B7280;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="alert-header">
+            <div class="alert-icon">🚨</div>
+            <div class="alert-title">FRAUD ALERT</div>
+            <div class="alert-subtitle">Suspicious Activity Detected</div>
+            <div class="risk-score">Risk Score: {{riskScore}}/100</div>
+        </div>
+
+        <p><strong>URGENT:</strong> Our fraud detection system has identified suspicious activity that requires immediate attention.</p>
+
+        <div class="details-section">
+            <div class="details-title">🔍 Alert Details</div>
+            
+            <div class="detail-item">
+                <span class="detail-label">Agent:</span>
+                <span class="detail-value">{{agentName}}</span>
+            </div>
+            
+            <div class="detail-item">
+                <span class="detail-label">Fraud Type:</span>
+                <span class="detail-value">{{fraudType}}</span>
+            </div>
+            
+            <div class="detail-item">
+                <span class="detail-label">Detection Time:</span>
+                <span class="detail-value">{{timestamp}}</span>
+            </div>
+            
+            <div class="detail-item">
+                <span class="detail-label">Investigation ID:</span>
+                <span class="detail-value">{{investigationId}}</span>
+            </div>
+        </div>
+
+        {{#if evidence}}
+        <div class="evidence-list">
+            <strong>📋 Evidence Summary:</strong>
+            {{#each evidence}}
+            <div class="evidence-item">• {{this}}</div>
+            {{/each}}
+        </div>
+        {{/if}}
+
+        <div class="action-required">
+            <div class="action-title">⚡ Immediate Action Required</div>
+            <p>This alert requires immediate investigation and response. Please:</p>
+            <ul>
+                <li>Review the agent's recent activities</li>
+                <li>Suspend the agent's access if necessary</li>
+                <li>Initiate formal investigation procedures</li>
+                <li>Document all findings and actions taken</li>
+            </ul>
+            
+            <div style="text-align: center;">
+                <a href="#" class="cta-button">View Investigation Details</a>
+            </div>
+        </div>
+
+        <p><strong>Important:</strong> This alert has been automatically logged in the system and relevant stakeholders have been notified. Please ensure appropriate action is taken within the next 2 hours.</p>
+
+        <p>For immediate assistance or questions about this alert, contact the security team immediately.</p>
+
+        <div class="footer">
+            <p><strong>This is a critical security alert.</strong></p>
+            <p>Investigation ID: {{investigationId}} | Generated: {{timestamp}}</p>
+            <p>© 2024 SalesSync Security System. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
