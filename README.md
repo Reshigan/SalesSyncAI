@@ -67,50 +67,97 @@ SalesSync is a comprehensive multi-tenant field marketing platform designed for 
 - Real-time synchronization
 - Battery optimization
 
-## 🚀 Quick Start
+## 🚀 Production Deployment
+
+### Ultra-Simple Deployment (5 minutes)
+Deploy SalesSync to production with a single command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/fixed-ultra-simple-deploy.sh | sudo bash
+```
+
+This script will:
+- Install all system dependencies (Node.js, PostgreSQL, Nginx, PM2)
+- Set up the database with production data
+- Build and deploy the frontend
+- Configure nginx with API proxy
+- Start the application with PM2 process management
+
+### Production Access
+
+**Primary URL**: http://SSAI.gonxt.tech  
+**API Base**: http://SSAI.gonxt.tech/api/  
+**Health Check**: http://SSAI.gonxt.tech/health
+
+### Production Demo Credentials
+
+**Super Admin:**
+- Email: `superadmin@salessync.com`
+- Password: `SuperAdmin123!`
+
+**Company Admin (Premium Beverages):**
+- Email: `admin@premiumbeverages.com`
+- Password: `DemoAdmin123!`
+
+**Area Manager:**
+- Email: `manager@premiumbeverages.com`
+- Password: `Manager123!`
+
+**Field Sales Agents:**
+- James Wilson: `james.wilson@premiumbeverages.com` / `FieldAgent123!`
+- Sarah Davis: `sarah.davis@premiumbeverages.com` / `FieldAgent123!`
+- Michael Brown: `michael.brown@premiumbeverages.com` / `FieldAgent123!`
+
+**Marketing Agents:**
+- Lisa Johnson: `lisa.johnson@premiumbeverages.com` / `MarketingAgent123!`
+- David Miller: `david.miller@premiumbeverages.com` / `MarketingAgent123!`
+
+## 🛠️ Development Setup
 
 ### Prerequisites
-- Docker and Docker Compose
 - Node.js 18+
 - PostgreSQL 14+
-- Redis 6+
+- Redis 6+ (optional)
 
-### Installation
+### Local Development
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/SalesSyncAI/SalesSync.git
-cd SalesSync
+git clone https://github.com/Reshigan/SalesSyncAI.git
+cd SalesSyncAI
 ```
 
-2. Start the development environment:
+2. Install backend dependencies:
 ```bash
-docker-compose up -d
-```
-
-3. Install dependencies:
-```bash
+cd backend
 npm install
-cd frontend && npm install
-cd ../mobile && npm install
 ```
 
-4. Run database migrations:
+3. Set up environment variables:
 ```bash
-npm run migrate
+cp .env.example .env
+# Edit .env with your database credentials
 ```
 
-5. Seed the database:
+4. Run database migrations and seed:
 ```bash
-npm run seed
+npx prisma migrate dev
+npx prisma db seed
 ```
 
-6. Start the development servers:
+5. Start the backend:
 ```bash
 npm run dev
 ```
 
-### Default Login Credentials
+6. Install and start frontend (in new terminal):
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Development Login Credentials
 
 **Super Admin:**
 - Email: `superadmin@salessync.com`
@@ -120,20 +167,28 @@ npm run dev
 - Email: `admin@testcompany.com`
 - Password: `TestAdmin123!`
 
-**Field Agents:**
-- Sales Agent: `sales.agent@testcompany.com` / `SalesAgent123!`
-- Marketing Agent: `marketing.agent@testcompany.com` / `MarketingAgent123!`
-- Promoter: `promoter@testcompany.com` / `Promoter123!`
+## 📊 Production Demo Data
 
-## 📊 Demo Data
+The production deployment includes comprehensive demo data:
 
-The system comes pre-loaded with comprehensive demo data including:
-- 2+ years of historical sales data
-- Customer database with visit history
-- Campaign and activation records
-- Stock movements and reconciliations
-- Survey responses and analytics
-- Performance metrics and KPIs
+### Companies & Users
+- **3 Companies**: Premium Beverages, TechCorp Solutions, Global Retail
+- **8 Users**: Super Admin, Company Admins, Area Managers, Field Agents
+- **Multi-role Authentication**: Cross-company user management
+
+### Business Data
+- **11 Customers**: Diverse customer base with contact information
+- **15 Products**: Complete product catalog with pricing
+- **50 Customer Visits**: Historical visit records with GPS data
+- **13 Orders**: Sales transactions with order details
+- **Comprehensive Analytics**: Performance metrics and KPIs
+
+### Features Demonstrated
+- Multi-tenant architecture with data isolation
+- Role-based access control across companies
+- Field sales workflow and customer management
+- Order processing and inventory tracking
+- Real-time analytics and reporting
 
 ## 🔧 Development
 
@@ -182,8 +237,9 @@ This project is proprietary software. All rights reserved.
 
 For support and questions:
 - Email: support@salessync.com
-- Documentation: https://docs.salessync.com
-- Issues: https://github.com/SalesSyncAI/SalesSync/issues
+- Repository: https://github.com/Reshigan/SalesSyncAI
+- Issues: https://github.com/Reshigan/SalesSyncAI/issues
+- Deployment Report: See `DEPLOYMENT_TEST_REPORT.md` for detailed testing results
 
 ---
 
