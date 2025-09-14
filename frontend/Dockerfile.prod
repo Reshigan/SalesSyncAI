@@ -11,9 +11,7 @@ COPY package*.json ./
 RUN npm install --silent
 
 # Copy source code
-COPY public ./public
-COPY src ./src
-COPY tsconfig.json ./
+COPY . .
 
 # Accept build arguments
 ARG REACT_APP_API_URL=http://localhost:3000/api
