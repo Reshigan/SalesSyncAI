@@ -247,7 +247,7 @@ export class BackupService {
 
     } catch (error) {
       metadata.status = 'failed';
-      metadata.error = error.message;
+      metadata.error = error instanceof Error ? error.message : String(error);
       this.activeBackups.delete(backupId);
       
       console.error('Database backup failed:', error);
@@ -319,7 +319,7 @@ export class BackupService {
 
     } catch (error) {
       metadata.status = 'failed';
-      metadata.error = error.message;
+      metadata.error = error instanceof Error ? error.message : String(error);
       this.activeBackups.delete(backupId);
       
       console.error('File backup failed:', error);

@@ -150,7 +150,7 @@ export async function sendPreOrderEDI(orderData: PreOrderEDIData): Promise<EDITr
           success: false,
           transmissionId: uuidv4(),
           timestamp: new Date(),
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
           retryCount: 0
         };
         results.push(errorResult);
@@ -237,7 +237,7 @@ async function sendOrderToPartner(
       success: false,
       transmissionId,
       timestamp,
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
       retryCount: 0
     };
   }
@@ -606,36 +606,41 @@ function applyMappingRules(data: any, rules: EDIMappingRule[]): any {
 // Helper functions
 
 function getActiveEDIConfigurations(companyId: string): Promise<EDIConfiguration[]> {
-  return prisma.ediConfiguration.findMany({
-    where: {
-      companyId,
-      active: true
-    }
-  }) as any;
+  // TODO: Create EDIConfiguration model in schema
+  return Promise.resolve([]);
+  // return prisma.ediConfiguration.findMany({
+  //   where: {
+  //     companyId,
+  //     active: true
+  //   }
+  // }) as any;
 }
 
 function logEDIMessage(messageData: Partial<EDIMessage>): Promise<any> {
-  return prisma.ediMessage.create({
-    data: {
-      ...messageData,
-      id: uuidv4(),
-      createdAt: new Date(),
-      transmissionResults: JSON.stringify(messageData.transmissionResults || [])
-    }
-  });
+  // TODO: Create EDIMessage model in schema
+  return Promise.resolve(null);
+  // return prisma.ediMessage.create({
+  //   data: {
+  //     ...messageData,
+  //     id: uuidv4(),
+  //     createdAt: new Date(),
+  //     transmissionResults: JSON.stringify(messageData.transmissionResults || [])
+  //   }
+  // });
 }
 
 async function updateOrderEDIStatus(orderId: string, results: EDITransmissionResult[]): Promise<void> {
   const allSuccessful = results.every(r => r.success);
   const status = allSuccessful ? 'EDI_SENT' : 'EDI_PARTIAL';
   
-  await prisma.preOrder.update({
-    where: { id: orderId },
-    data: {
-      ediStatus: status,
-      ediTransmissionResults: JSON.stringify(results)
-    }
-  });
+  // TODO: Create PreOrder model in schema
+  // await prisma.preOrder.update({
+  //   where: { id: orderId },
+  //   data: {
+  //     ediStatus: status,
+  //     ediTransmissionResults: JSON.stringify(results)
+  //   }
+  // });
 }
 
 async function notifyEDIFailures(orderData: PreOrderEDIData, failures: EDITransmissionResult[]): Promise<void> {
@@ -643,7 +648,7 @@ async function notifyEDIFailures(orderData: PreOrderEDIData, failures: EDITransm
   const adminUsers = await prisma.user.findMany({
     where: {
       companyId: orderData.companyId,
-      role: { in: ['COMPANY_ADMIN', 'MANAGER'] }
+      role: { in: ['COMPANY_ADMIN', 'AREA_MANAGER'] }
     }
   });
 
@@ -708,43 +713,60 @@ function setNestedValue(obj: any, path: string, value: any): void {
  * @returns Retry result
  */
 export async function retryEDITransmission(messageId: string): Promise<EDITransmissionResult> {
-  const message = await prisma.ediMessage.findUnique({
-    where: { id: messageId },
-    include: {
-      configuration: true,
-      order: true
-    }
-  });
+  // TODO: Create EDIMessage model in schema
+  const message = null; // await prisma.ediMessage.findUnique({
+  //   where: { id: messageId },
+  //   include: {
+  //     configuration: true,
+  //     order: true
+  //   }
+  // });
 
   if (!message) {
-    throw new Error('EDI message not found');
+    return {
+      success: false,
+      error: 'EDI message not found',
+      transmissionId: '',
+      timestamp: new Date(),
+      retryCount: 0
+    };
   }
 
-  if (message.status === 'SENT' || message.status === 'DELIVERED') {
-    throw new Error('Message already sent successfully');
-  }
+  // TODO: Implement retry logic when EDIMessage model is available
+  return {
+    success: false,
+    error: 'EDI retry functionality not implemented - missing EDIMessage model',
+    transmissionId: '',
+    timestamp: new Date(),
+    retryCount: 0
+  };
 
-  // Get the original order data
-  const orderData = JSON.parse(message.order.orderData);
-  const config = message.configuration;
+  // if (message.status === 'SENT' || message.status === 'DELIVERED') {
+  //   throw new Error('Message already sent successfully');
+  // }
 
-  // Attempt retransmission
-  const result = await sendOrderToPartner(orderData, config);
+  // // Get the original order data
+  // const orderData = JSON.parse(message.order.orderData);
+  // const config = message.configuration;
+
+  // // Attempt retransmission
+  // const result = await sendOrderToPartner(orderData, config);
   
-  // Update message with retry result
-  const transmissionResults = JSON.parse(message.transmissionResults as string);
-  transmissionResults.push(result);
+  // // Update message with retry result
+  // const transmissionResults = JSON.parse(message.transmissionResults as string);
+  // transmissionResults.push(result);
 
-  await prisma.ediMessage.update({
-    where: { id: messageId },
-    data: {
-      status: result.success ? 'SENT' : 'ERROR',
-      transmissionResults: JSON.stringify(transmissionResults),
-      processedAt: new Date()
-    }
-  });
+  // TODO: Create EDIMessage model in schema
+  // await prisma.ediMessage.update({
+  //   where: { id: messageId },
+  //   data: {
+  //     status: result.success ? 'SENT' : 'ERROR',
+  //     transmissionResults: JSON.stringify(transmissionResults),
+  //     processedAt: new Date()
+  //   }
+  // });
 
-  return result;
+  // return result;
 }
 
 /**
@@ -758,53 +780,63 @@ export async function processInboundEDIMessage(
   configurationId: string
 ): Promise<{ success: boolean; messageType?: string; orderId?: string; error?: string }> {
   try {
-    const config = await prisma.ediConfiguration.findUnique({
-      where: { id: configurationId }
-    });
+    // TODO: Create EDIConfiguration model in schema
+    const config = null; // await prisma.ediConfiguration.findUnique({
+    //   where: { id: configurationId }
+    // });
 
     if (!config) {
-      throw new Error('EDI configuration not found');
+      return {
+        success: false,
+        error: 'EDI configuration not found'
+      };
     }
 
-    // Parse message based on format
-    let parsedMessage: any;
-    switch (config.messageFormat) {
-      case 'JSON':
-        parsedMessage = JSON.parse(messageContent);
-        break;
-      case 'XML':
-        // Would need XML parser
-        throw new Error('XML parsing not implemented');
-      case 'X12':
-        // Would need X12 parser
-        throw new Error('X12 parsing not implemented');
-      default:
-        throw new Error(`Unsupported inbound format: ${config.messageFormat}`);
-    }
-
-    // Determine message type and process accordingly
-    const messageType = determineMessageType(parsedMessage, config);
-    
-    // Log inbound message
-    await logEDIMessage({
-      configurationId,
-      orderId: parsedMessage.orderNumber || '',
-      messageType: messageType as any,
-      direction: 'INBOUND',
-      status: 'DELIVERED',
-      messageContent
-    });
-
+    // TODO: Implement message parsing when EDIConfiguration model is available
     return {
-      success: true,
-      messageType,
-      orderId: parsedMessage.orderNumber
+      success: false,
+      error: 'EDI message processing not implemented - missing EDIConfiguration model'
     };
+
+    // // Parse message based on format
+    // let parsedMessage: any;
+    // switch (config.messageFormat) {
+    //   case 'JSON':
+    //     parsedMessage = JSON.parse(messageContent);
+    //     break;
+    //   case 'XML':
+    //     // Would need XML parser
+    //     throw new Error('XML parsing not implemented');
+    //   case 'X12':
+    //     // Would need X12 parser
+    //     throw new Error('X12 parsing not implemented');
+    //   default:
+    //     throw new Error(`Unsupported inbound format: ${config.messageFormat}`);
+    // }
+
+    // // Determine message type and process accordingly
+    // const messageType = determineMessageType(parsedMessage, config);
+    
+    // // Log inbound message
+    // await logEDIMessage({
+    //   configurationId,
+    //   orderId: parsedMessage.orderNumber || '',
+    //   messageType: messageType as any,
+    //   direction: 'INBOUND',
+    //   status: 'DELIVERED',
+    //   messageContent
+    // });
+
+    // return {
+    //   success: true,
+    //   messageType,
+    //   orderId: parsedMessage.orderNumber
+    // };
 
   } catch (error) {
     return {
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
 }

@@ -60,7 +60,7 @@ export interface EmailConfig {
 }
 
 export class EmailService {
-  private transporter: nodemailer.Transporter<SMTPTransport.SentMessageInfo>;
+  private transporter!: nodemailer.Transporter;
   private config: EmailConfig;
   private templates: Map<string, EmailTemplate> = new Map();
 
@@ -197,6 +197,7 @@ export class EmailService {
   async sendWelcomeEmail(userEmail: string, userData: any): Promise<boolean> {
     return this.sendEmail({
       to: userEmail,
+      subject: `Welcome to ${userData.companyName}!`,
       template: 'welcome',
       templateData: {
         userName: userData.name,
@@ -213,6 +214,7 @@ export class EmailService {
   async sendPasswordResetEmail(userEmail: string, resetData: any): Promise<boolean> {
     return this.sendEmail({
       to: userEmail,
+      subject: 'Password Reset Request',
       template: 'password-reset',
       templateData: {
         userName: resetData.name,
@@ -246,6 +248,7 @@ export class EmailService {
 
     return this.sendEmail({
       to: recipients,
+      subject: `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Analytics Report`,
       template: 'analytics-report',
       templateData: {
         reportType: reportType.charAt(0).toUpperCase() + reportType.slice(1),
@@ -266,6 +269,7 @@ export class EmailService {
   ): Promise<boolean> {
     return this.sendEmail({
       to: recipients,
+      subject: `Performance Alert: ${alertData.type}`,
       template: 'performance-alert',
       templateData: {
         alertType: alertData.type,
@@ -287,6 +291,7 @@ export class EmailService {
     fraudData: any
   ): Promise<boolean> {
     return this.sendEmail({
+      subject: "Fraud Alert",
       to: recipients,
       template: 'fraud-alert',
       templateData: {
@@ -310,6 +315,7 @@ export class EmailService {
   ): Promise<boolean> {
     return this.sendEmail({
       to: recipients,
+      subject: "System Notification",
       template: 'system-notification',
       templateData: {
         title: notificationData.title,
@@ -330,6 +336,7 @@ export class EmailService {
   ): Promise<boolean> {
     return this.sendEmail({
       to: recipients,
+      subject: "Campaign Notification",
       template: 'campaign-notification',
       templateData: {
         campaignName: campaignData.name,
@@ -381,7 +388,7 @@ export class EmailService {
           results.failed++;
           results.errors.push({
             recipient,
-            error: error.message
+            error: error instanceof Error ? error.message : 'Unknown error'
           });
         }
       });
@@ -407,6 +414,7 @@ export class EmailService {
   ): Promise<boolean> {
     return this.sendEmail({
       to: reportConfig.recipients,
+      subject: "Scheduled Report",
       template: 'scheduled-report',
       templateData: {
         reportName: reportConfig.name,

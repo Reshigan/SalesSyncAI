@@ -47,15 +47,15 @@ router.get('/tiers/:tierId', async (req, res) => {
 // Get company subscription (authenticated)
 router.get('/subscription', authenticateToken, async (req, res) => {
   try {
-    const { companyId } = req.user;
+    const { companyId } = req.user!;
     
     // Mock subscription data - in real implementation, fetch from database
     const subscription = {
       id: 'sub_' + companyId,
       companyId,
       tierId: 'professional',
-      status: 'active',
-      billingCycle: 'monthly',
+      status: 'active' as const,
+      billingCycle: 'monthly' as const,
       startDate: new Date('2024-01-01'),
       endDate: new Date('2024-12-31'),
       autoRenew: true,
@@ -85,7 +85,7 @@ router.get('/subscription', authenticateToken, async (req, res) => {
 // Get usage metrics (authenticated)
 router.get('/usage', authenticateToken, async (req, res) => {
   try {
-    const { companyId } = req.user;
+    const { companyId } = req.user!;
     const { period } = req.query;
     
     const currentPeriod = period as string || new Date().toISOString().substring(0, 7);
@@ -146,7 +146,7 @@ router.post('/calculate', authenticateToken, async (req, res) => {
 // Request upgrade quote (authenticated)
 router.post('/quote', authenticateToken, async (req, res) => {
   try {
-    const { companyId, email, firstName, lastName } = req.user;
+    const { companyId, email } = req.user!;
     const { tierId, billingCycle, message } = req.body;
     
     const tier = SUBSCRIPTION_TIERS.find(t => t.id === tierId);
@@ -169,8 +169,8 @@ router.post('/quote', authenticateToken, async (req, res) => {
       billingCycle,
       requestedBy: {
         email,
-        firstName,
-        lastName
+        firstName: 'User',
+        lastName: 'Name'
       },
       message,
       status: 'pending',
@@ -196,7 +196,7 @@ router.post('/quote', authenticateToken, async (req, res) => {
 // Get billing history (authenticated)
 router.get('/billing', authenticateToken, async (req, res) => {
   try {
-    const { companyId } = req.user;
+    const { companyId } = req.user!;
     
     // Mock billing history - in real implementation, fetch from database
     const billingHistory = [

@@ -22,7 +22,7 @@ export interface ExcelOptions {
 }
 
 export interface ExcelChartConfig {
-  type: 'line' | 'bar' | 'pie' | 'doughnut' | 'area';
+  type: 'line' | 'bar' | 'pie' | 'doughnut';
   data: any;
   options?: any;
   position?: {
@@ -74,7 +74,7 @@ export class ExcelGenerator {
       }
 
       // Return buffer
-      return await this.workbook.xlsx.writeBuffer() as Buffer;
+      return Buffer.from(await this.workbook.xlsx.writeBuffer());
 
     } catch (error) {
       console.error('Excel generation error:', error);
@@ -457,7 +457,7 @@ export class ExcelGenerator {
       
       // Add chart as image
       const imageId = this.workbook.addImage({
-        buffer: chartBuffer,
+        buffer: chartBuffer as any,
         extension: 'png',
       });
 

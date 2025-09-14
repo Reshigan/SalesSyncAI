@@ -34,7 +34,7 @@ export interface PDFOptions {
 }
 
 export interface ChartConfig {
-  type: 'line' | 'bar' | 'pie' | 'doughnut' | 'area';
+  type: 'line' | 'bar' | 'pie' | 'doughnut';
   data: any;
   options?: any;
   width?: number;

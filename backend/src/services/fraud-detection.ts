@@ -109,7 +109,7 @@ export async function detectFraud(input: FraudDetectionInput): Promise<FraudDete
       riskScore: 0,
       flags: [],
       recommendations: ['Fraud detection system error - manual review recommended'],
-      autoActions: [{ action: 'LOG_INCIDENT', reason: 'System error', data: { error: error.message } }]
+      autoActions: [{ action: 'LOG_INCIDENT', reason: 'System error', data: { error: error instanceof Error ? error.message : 'Unknown error' } }]
     };
   }
 }
@@ -625,27 +625,30 @@ async function getAgentBehaviorProfile(agentId: string): Promise<AgentBehaviorPr
     profile = await prisma.agentBehaviorProfile.create({
       data: {
         agentId,
-        averageVisitDuration: 1800, // 30 minutes
-        typicalWorkingHours: JSON.stringify({ start: 8, end: 17 }),
-        averageVisitsPerDay: 8,
-        averageSalesPerVisit: 150,
-        commonLocations: JSON.stringify([]),
-        photoQualityAverage: 75,
-        suspiciousActivityCount: 0
+        companyId: '',
+        behaviorMetrics: {
+          averageVisitDuration: 1800, // 30 minutes
+          typicalWorkingHours: { start: 8, end: 17 },
+          averageVisitsPerDay: 8,
+          averageSalesPerVisit: 150,
+          commonLocations: [],
+          photoQualityAverage: 75,
+          suspiciousActivityCount: 0
+        }
       }
     });
   }
 
   return {
     agentId: profile.agentId,
-    averageVisitDuration: profile.averageVisitDuration,
-    typicalWorkingHours: JSON.parse(profile.typicalWorkingHours as string),
-    averageVisitsPerDay: profile.averageVisitsPerDay,
-    averageSalesPerVisit: profile.averageSalesPerVisit,
-    commonLocations: JSON.parse(profile.commonLocations as string),
-    photoQualityAverage: profile.photoQualityAverage,
-    suspiciousActivityCount: profile.suspiciousActivityCount,
-    lastUpdated: profile.updatedAt
+    averageVisitDuration: (profile.behaviorMetrics as any)?.averageVisitDuration || 0,
+    typicalWorkingHours: (profile.behaviorMetrics as any)?.typicalWorkingHours || {},
+    averageVisitsPerDay: (profile.behaviorMetrics as any)?.averageVisitsPerDay || 0,
+    averageSalesPerVisit: (profile.behaviorMetrics as any)?.averageSalesPerVisit || 0,
+    commonLocations: (profile.behaviorMetrics as any)?.commonLocations || [],
+    photoQualityAverage: (profile.behaviorMetrics as any)?.photoQualityAverage || 0,
+    suspiciousActivityCount: (profile.behaviorMetrics as any)?.suspiciousActivityCount || 0,
+    lastUpdated: profile.lastUpdated
   };
 }
 
@@ -661,7 +664,7 @@ async function getAgentLocationHistory(agentId: string, hours: number): Promise<
   });
 
   return visits.map(visit => {
-    const location = JSON.parse(visit.location || '{}');
+    const location = visit.gpsLocation ? JSON.parse(visit.gpsLocation as string) : {};
     return {
       coordinates: { latitude: location.latitude || 0, longitude: location.longitude || 0 },
       timestamp: visit.createdAt,
@@ -728,11 +731,11 @@ async function logFraudDetectionEvent(
   await prisma.fraudDetectionLog.create({
     data: {
       agentId: input.agentId,
-      activityType: input.activityType,
-      riskLevel: result.riskLevel,
+      companyId: (input as any).companyId || '',
+      eventType: input.activityType,
       riskScore: result.riskScore,
-      flags: JSON.stringify(result.flags),
-      metadata: JSON.stringify(input.metadata || {})
+      evidence: JSON.stringify(result.flags),
+      autoActions: input.metadata || {}
     }
   });
 }

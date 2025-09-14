@@ -11,7 +11,7 @@ import webpush from 'web-push';
 const prisma = new PrismaClient();
 
 // Configure services
-const emailTransporter = nodemailer.createTransporter({
+const emailTransporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: parseInt(process.env.SMTP_PORT || '587'),
   secure: false,
@@ -86,7 +86,6 @@ export async function sendNotification(input: NotificationInput): Promise<Notifi
     const recipient = await prisma.user.findUnique({
       where: { id: input.recipientId },
       include: {
-        notificationSettings: true,
         pushSubscriptions: true
       }
     });
@@ -106,14 +105,12 @@ export async function sendNotification(input: NotificationInput): Promise<Notifi
     const notification = await prisma.notification.create({
       data: {
         type: input.type,
-        recipientId: input.recipientId,
+        userId: input.recipientId,
+        companyId: recipient.companyId,
         title: input.title,
         message: input.message,
-        data: JSON.stringify(input.data || {}),
-        channels: JSON.stringify(channels),
-        priority: input.priority || 'MEDIUM',
-        scheduledFor: input.scheduledFor || new Date(),
-        expiresAt: input.expiresAt,
+        data: input.data || {},
+        channels: channels,
         status: 'PENDING'
       }
     });
@@ -129,7 +126,7 @@ export async function sendNotification(input: NotificationInput): Promise<Notifi
         channelResults.push({
           channel,
           success: false,
-          error: error.message
+          error: error instanceof Error ? error.message : "Unknown error"
         });
       }
     }
@@ -140,8 +137,7 @@ export async function sendNotification(input: NotificationInput): Promise<Notifi
       where: { id: notification.id },
       data: {
         status: overallSuccess ? 'SENT' : 'FAILED',
-        sentAt: overallSuccess ? new Date() : null,
-        channelResults: JSON.stringify(channelResults)
+        sentAt: overallSuccess ? new Date() : null
       }
     });
 
@@ -157,7 +153,7 @@ export async function sendNotification(input: NotificationInput): Promise<Notifi
     return {
       success: false,
       channelResults: [],
-      errors: [error.message]
+      errors: [error instanceof Error ? error.message : "Unknown error"]
     };
   }
 }
@@ -235,7 +231,7 @@ async function sendPushNotification(
     return {
       channel: 'push',
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : "Unknown error"
     };
   }
 }
@@ -281,7 +277,7 @@ async function sendEmailNotification(
     return {
       channel: 'email',
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : "Unknown error"
     };
   }
 }
@@ -331,7 +327,7 @@ async function sendSMSNotification(
     return {
       channel: 'sms',
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : "Unknown error"
     };
   }
 }
@@ -351,12 +347,11 @@ async function sendInAppNotification(
     await prisma.inAppNotification.create({
       data: {
         userId: recipient.id,
-        type: input.type,
         title: input.title,
         message: input.message,
-        data: JSON.stringify(input.data || {}),
-        priority: input.priority || 'MEDIUM',
-        read: false
+        data: input.data || {},
+        type: input.type || 'INFO',
+        isRead: false
       }
     });
 
@@ -370,7 +365,7 @@ async function sendInAppNotification(
     return {
       channel: 'in_app',
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : "Unknown error"
     };
   }
 }
@@ -608,18 +603,16 @@ export async function sendTemplatedNotification(
       };
     }
 
-    const templateData = JSON.parse(template.template as string);
-    
-    // Replace variables in template
-    const title = replaceVariables(templateData.title, variables);
-    const message = replaceVariables(templateData.message, variables);
+    // Replace variables in template content
+    const title = template.subject ? replaceVariables(template.subject, variables) : 'Notification';
+    const message = replaceVariables(template.content, variables);
 
     return await sendNotification({
       type: template.type as any,
       recipientId,
       title,
       message,
-      channels: JSON.parse(template.channels as string),
+      channels: ['email', 'in_app'], // Default channels
       data: variables
     });
 
@@ -627,7 +620,7 @@ export async function sendTemplatedNotification(
     return {
       success: false,
       channelResults: [],
-      errors: [error.message]
+      errors: [error instanceof Error ? error.message : "Unknown error"]
     };
   }
 }
@@ -690,7 +683,7 @@ export async function markNotificationAsRead(
         userId
       },
       data: {
-        read: true,
+        isRead: true,
         readAt: new Date()
       }
     });
@@ -711,10 +704,10 @@ export async function markAllNotificationsAsRead(userId: string): Promise<boolea
     await prisma.inAppNotification.updateMany({
       where: {
         userId,
-        read: false
+        isRead: false
       },
       data: {
-        read: true,
+        isRead: true,
         readAt: new Date()
       }
     });
@@ -739,9 +732,9 @@ export async function subscribeToPushNotifications(
     await prisma.pushSubscription.create({
       data: {
         userId,
-        subscription: JSON.stringify(subscription),
-        userAgent: subscription.userAgent || '',
-        active: true
+        endpoint: subscription.endpoint,
+        keys: subscription.keys,
+        isActive: true
       }
     });
     return true;
@@ -765,9 +758,7 @@ export async function unsubscribeFromPushNotifications(
     await prisma.pushSubscription.deleteMany({
       where: {
         userId,
-        subscription: {
-          contains: endpoint
-        }
+        endpoint: endpoint
       }
     });
     return true;

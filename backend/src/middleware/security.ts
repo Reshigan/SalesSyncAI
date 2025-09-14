@@ -66,7 +66,6 @@ class SecurityService {
       port: parseInt(process.env.REDIS_PORT || '6379'),
       password: process.env.REDIS_PASSWORD,
       db: parseInt(process.env.REDIS_DB || '3'), // Use DB 3 for security
-      retryDelayOnFailover: 100,
       maxRetriesPerRequest: 3,
       lazyConnect: true
     });
@@ -123,13 +122,13 @@ class SecurityService {
       keyGenerator: (req: Request) => {
         // Use user ID if authenticated, otherwise IP
         const userId = (req as AuthenticatedRequest).user?.id;
-        return userId || req.ip;
+        return userId || req.ip || 'unknown';
       },
       handler: (req: Request, res: Response) => {
         this.recordSecurityEvent({
           type: 'rate_limit',
           severity: 'medium',
-          ip: req.ip,
+          ip: req.ip || 'unknown',
           userAgent: req.get('User-Agent'),
           userId: (req as AuthenticatedRequest).user?.id,
           companyId: (req as AuthenticatedRequest).user?.companyId,
@@ -166,7 +165,7 @@ class SecurityService {
           this.recordSecurityEvent({
             type: 'brute_force',
             severity: 'high',
-            ip: req.ip,
+            ip: req.ip || 'unknown',
             userAgent: req.get('User-Agent'),
             endpoint: req.path,
             method: req.method,
@@ -222,10 +221,10 @@ class SecurityService {
    */
   ipFilteringMiddleware() {
     return (req: Request, res: Response, next: NextFunction) => {
-      const clientIp = req.ip;
+      const clientIp = req.ip || 'unknown';
 
       // Check blacklist
-      if (this.config.ipBlacklist.includes(clientIp)) {
+      if (clientIp !== 'unknown' && this.config.ipBlacklist.includes(clientIp)) {
         this.recordSecurityEvent({
           type: 'blocked_ip',
           severity: 'high',
@@ -244,7 +243,7 @@ class SecurityService {
       }
 
       // Check threat intelligence
-      const threat = this.threatIntelligence.get(clientIp);
+      const threat = clientIp !== 'unknown' ? this.threatIntelligence.get(clientIp) : null;
       if (threat && threat.blocked) {
         this.recordSecurityEvent({
           type: 'blocked_ip',
@@ -282,7 +281,7 @@ class SecurityService {
           this.recordSecurityEvent({
             type: 'suspicious_activity',
             severity: 'medium',
-            ip: req.ip,
+            ip: req.ip || 'unknown',
             userAgent,
             userId: (req as AuthenticatedRequest).user?.id,
             companyId: (req as AuthenticatedRequest).user?.companyId,
@@ -314,7 +313,7 @@ class SecurityService {
           securityService.recordSecurityEvent({
             type: 'validation_error',
             severity: 'low',
-            ip: req.ip,
+            ip: req.ip || 'unknown',
             userAgent: req.get('User-Agent'),
             userId: (req as AuthenticatedRequest).user?.id,
             companyId: (req as AuthenticatedRequest).user?.companyId,

@@ -7,6 +7,7 @@ import { Request, Response, NextFunction } from 'express';
 import { performance } from 'perf_hooks';
 import { AuthenticatedRequest } from './auth';
 import Redis from 'ioredis';
+import * as os from 'os';
 
 export interface PerformanceMetrics {
   requestId: string;
@@ -91,7 +92,6 @@ class MonitoringService {
       port: parseInt(process.env.REDIS_PORT || '6379'),
       password: process.env.REDIS_PASSWORD,
       db: parseInt(process.env.REDIS_DB || '2'), // Use DB 2 for monitoring
-      retryDelayOnFailover: 100,
       maxRetriesPerRequest: 3,
       lazyConnect: true
     });
@@ -349,7 +349,7 @@ class MonitoringService {
     try {
       const memoryUsage = process.memoryUsage();
       const cpuUsage = process.cpuUsage();
-      const loadAverage = process.loadavg();
+      const loadAverage = os.loadavg();
 
       // Calculate error rate
       const errorRate = this.requestCount > 0 ? (this.errorCount / this.requestCount) * 100 : 0;

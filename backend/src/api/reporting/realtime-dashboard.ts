@@ -3,8 +3,8 @@
  * WebSocket-based real-time metrics and live updates
  */
 
-import { Router } from 'express';
-import { Server as SocketIOServer } from 'socket.io';
+import { Router, Response } from 'express';
+import { Server as SocketIOServer, Socket } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
 import { AuthenticatedRequest, authMiddleware } from '../../middleware/auth';
 import { cacheMiddleware, CacheTags } from '../../middleware/cache';
@@ -106,7 +106,7 @@ interface LiveUpdate {
 router.get('/metrics',
   authMiddleware,
   cacheMiddleware(30), // 30 seconds cache
-  async (req: AuthenticatedRequest, res) => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       const companyId = req.user!.companyId;
       const metrics = await generateRealTimeMetrics(companyId);
@@ -135,7 +135,7 @@ router.get('/activity',
     query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
     query('type').optional().isIn(['sale', 'visit', 'agent_status', 'alert', 'system']).withMessage('Invalid activity type')
   ],
-  async (req: AuthenticatedRequest, res) => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -173,7 +173,7 @@ router.get('/activity',
 router.get('/agents/status',
   authMiddleware,
   cacheMiddleware(60), // 1 minute cache
-  async (req: AuthenticatedRequest, res) => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       const companyId = req.user!.companyId;
       const agentStatus = await getAgentStatusOverview(companyId);
@@ -198,7 +198,7 @@ router.get('/agents/status',
  */
 router.get('/system/health',
   authMiddleware,
-  async (req: AuthenticatedRequest, res) => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       const companyId = req.user!.companyId;
       const systemHealth = await getSystemHealthMetrics(companyId);
@@ -227,7 +227,7 @@ router.get('/alerts',
     query('severity').optional().isIn(['low', 'medium', 'high', 'critical']).withMessage('Invalid severity level'),
     query('acknowledged').optional().isBoolean().withMessage('Acknowledged must be boolean')
   ],
-  async (req: AuthenticatedRequest, res) => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -264,7 +264,7 @@ router.get('/alerts',
  */
 router.post('/alerts/:alertId/acknowledge',
   authMiddleware,
-  async (req: AuthenticatedRequest, res) => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { alertId } = req.params;
       const userId = req.user!.id;
@@ -312,7 +312,7 @@ router.post('/alerts/:alertId/acknowledge',
 router.get('/performance/hourly',
   authMiddleware,
   cacheMiddleware(300), // 5 minutes cache
-  async (req: AuthenticatedRequest, res) => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       const companyId = req.user!.companyId;
       const hourlyData = await getHourlyPerformanceData(companyId);
@@ -336,7 +336,7 @@ router.get('/performance/hourly',
 function setupWebSocketHandlers() {
   if (!io) return;
 
-  io.on('connection', (socket) => {
+  io.on('connection', (socket: Socket) => {
     console.log('Client connected to real-time dashboard:', socket.id);
 
     // Join company room for targeted updates
@@ -412,13 +412,13 @@ async function generateRealTimeMetrics(companyId: string): Promise<RealTimeMetri
     where: {
       companyId,
       role: {
-        in: ['FIELD_AGENT', 'FIELD_MARKETING_AGENT', 'PROMOTER']
+        in: ['FIELD_SALES_AGENT', 'FIELD_MARKETING_AGENT', 'PROMOTER']
       }
     }
   });
 
   // Calculate metrics
-  const todayRevenue = todaySales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+  const todayRevenue = todaySales.reduce((sum, sale) => sum + Number(sale.totalAmount), 0);
   const todayTransactions = todaySales.length;
   
   const plannedVisits = todayVisits.length;
@@ -432,9 +432,9 @@ async function generateRealTimeMetrics(companyId: string): Promise<RealTimeMetri
   // Get recent sales (last 10)
   const recentSales: RecentSale[] = todaySales.slice(0, 10).map(sale => ({
     id: sale.id,
-    agentName: sale.agent.name,
+    agentName: `${sale.agent.firstName} ${sale.agent.lastName}`,
     customerName: sale.customer.name,
-    amount: sale.totalAmount,
+    amount: Number(sale.totalAmount),
     timestamp: sale.createdAt,
     status: 'completed'
   }));
@@ -442,12 +442,12 @@ async function generateRealTimeMetrics(companyId: string): Promise<RealTimeMetri
   // Get recent visits (last 10)
   const recentVisits: RecentVisit[] = todayVisits.slice(0, 10).map(visit => ({
     id: visit.id,
-    agentName: visit.agent.name,
+    agentName: `${visit.agent.firstName} ${visit.agent.lastName}`,
     customerName: visit.customer.name,
     status: visit.status.toLowerCase() as any,
-    startTime: visit.startTime || visit.createdAt,
-    duration: visit.endTime && visit.startTime 
-      ? Math.round((new Date(visit.endTime).getTime() - new Date(visit.startTime).getTime()) / 60000)
+    startTime: visit.actualStartTime || visit.createdAt,
+    duration: visit.actualEndTime && visit.actualStartTime 
+      ? Math.round((new Date(visit.actualEndTime).getTime() - new Date(visit.actualStartTime).getTime()) / 60000)
       : undefined
   }));
 
@@ -458,7 +458,7 @@ async function generateRealTimeMetrics(companyId: string): Promise<RealTimeMetri
     if (!agentSales.has(agentId)) {
       agentSales.set(agentId, {
         agentId,
-        agentName: sale.agent.name,
+        agentName: `${sale.agent.firstName} ${sale.agent.lastName}`,
         todayRevenue: 0,
         todayVisits: 0,
         status: 'online',
@@ -466,7 +466,7 @@ async function generateRealTimeMetrics(companyId: string): Promise<RealTimeMetri
       });
     }
     const agent = agentSales.get(agentId);
-    agent.todayRevenue += sale.totalAmount;
+    agent.todayRevenue += Number(sale.totalAmount);
   });
 
   // Add visit counts
@@ -524,7 +524,7 @@ function generateHourlyRevenue(sales: any[]): number[] {
   
   sales.forEach(sale => {
     const hour = new Date(sale.createdAt).getHours();
-    hourlyData[hour] += sale.totalAmount;
+    hourlyData[hour] += Number(sale.totalAmount);
   });
   
   return hourlyData;
@@ -595,7 +595,7 @@ async function getAgentStatusOverview(companyId: string): Promise<any> {
     where: {
       companyId,
       role: {
-        in: ['FIELD_AGENT', 'FIELD_MARKETING_AGENT', 'PROMOTER']
+        in: ['FIELD_SALES_AGENT', 'FIELD_MARKETING_AGENT', 'PROMOTER']
       }
     }
   });
@@ -608,7 +608,7 @@ async function getAgentStatusOverview(companyId: string): Promise<any> {
     offline: Math.floor(agents.length * 0.05),
     agents: agents.map(agent => ({
       id: agent.id,
-      name: agent.name,
+      name: `${agent.firstName} ${agent.lastName}`,
       status: Math.random() > 0.2 ? 'online' : 'offline',
       lastActivity: new Date(Date.now() - Math.random() * 60 * 60 * 1000),
       currentLocation: 'Territory A'
