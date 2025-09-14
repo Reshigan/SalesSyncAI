@@ -73,25 +73,7 @@ services:
       - salessync-network
     command: npm run dev
 
-  # AI Services
-  ai-services:
-    build:
-      context: ./ai-services
-      dockerfile: Dockerfile
-    container_name: salessync-ai
-    environment:
-      PYTHON_ENV: development
-      DATABASE_URL: postgresql://salessync:salessync_password@postgres:5432/salessync
-      REDIS_URL: redis://redis:6379
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./ai-services:/app
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - salessync-network
+
 
 volumes:
   postgres_data:

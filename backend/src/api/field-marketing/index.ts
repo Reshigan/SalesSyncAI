@@ -1,13 +1,18 @@
 import { Router } from 'express';
-import campaignsRouter from './campaigns';
-import surveysRouter from './surveys';
-import streetMarketingRouter from './street-marketing';
 
 const router = Router();
 
-// Mount field marketing routes
-router.use('/campaigns', campaignsRouter);
-router.use('/surveys', surveysRouter);
-router.use('/street-marketing', streetMarketingRouter);
+// Simple placeholder routes
+router.get('/campaigns', (req, res) => {
+  res.json({ success: true, data: [], message: 'Field marketing campaigns - Coming soon' });
+});
+
+router.get('/surveys', (req, res) => {
+  res.json({ success: true, data: [], message: 'Field marketing surveys - Coming soon' });
+});
+
+router.get('/street-marketing', (req, res) => {
+  res.json({ success: true, data: [], message: 'Street marketing - Coming soon' });
+});
 
 export default router;

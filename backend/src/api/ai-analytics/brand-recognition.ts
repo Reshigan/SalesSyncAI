@@ -55,7 +55,7 @@ router.post('/detect', authenticateToken, upload.single('image'), async (req: Re
     const brandNames = new Set<string>();
     products.forEach(product => {
       if (product.name) brandNames.add(product.name);
-      if (product.brand) brandNames.add(product.brand);
+      if (product.brandId) brandNames.add(product.brandId);
     });
 
     const companyBrands = Array.from(brandNames);

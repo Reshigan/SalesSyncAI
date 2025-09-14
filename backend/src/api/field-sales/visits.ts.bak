@@ -1,0 +1,412 @@
+import { Router, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import { AuthenticatedRequest, authMiddleware } from '../../middleware/auth';
+
+const router = Router();
+const prisma = new PrismaClient();
+
+// Get visit plan for agent
+router.get('/plan', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { date } = req.query;
+    const targetDate = date ? new Date(date as string) : new Date();
+    
+    const visits = await prisma.visit.findMany({
+      where: {
+        agentId: req.user!.id,
+        scheduledDate: {
+          gte: new Date(targetDate.setHours(0, 0, 0, 0)),
+          lt: new Date(targetDate.setHours(23, 59, 59, 999))
+        }
+      },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            phone: true,
+            email: true,
+            coordinates: true,
+            customerType: true
+          }
+        },
+        surveys: {
+          select: {
+            id: true,
+            surveyId: true,
+            status: true
+          }
+        }
+      },
+      orderBy: {
+        scheduledTime: 'asc'
+      }
+    });
+
+    // Calculate optimized route (simplified version)
+    const optimizedVisits = visits.map((visit, index) => ({
+      ...visit,
+      routeOrder: index + 1,
+      estimatedTravelTime: index === 0 ? 0 : 15 // minutes
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        date: targetDate,
+        visits: optimizedVisits,
+        totalVisits: visits.length,
+        estimatedDuration: visits.length * 45 + (visits.length - 1) * 15 // 45 min per visit + travel
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching visit plan:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch visit plan'
+    });
+  }
+});
+
+// Start a visit
+router.post('/:visitId/start', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { visitId } = req.params;
+    const { location, arrivalPhoto } = req.body;
+
+    const visit = await prisma.visit.findFirst({
+      where: {
+        id: visitId,
+        agentId: req.user!.id
+      },
+      include: {
+        customer: true
+      }
+    });
+
+    if (!visit) {
+      return res.status(404).json({
+        success: false,
+        error: 'Visit not found'
+      });
+    }
+
+    if (visit.status !== 'PLANNED') {
+      return res.status(400).json({
+        success: false,
+        error: 'Visit has already been started or completed'
+      });
+    }
+
+    // Validate location (simplified - in production, use proper GPS validation)
+    const isLocationValid = true; // validateLocation(location, visit.customer.coordinates);
+
+    if (!isLocationValid) {
+      return res.status(400).json({
+        success: false,
+        error: 'Location validation failed. Please ensure you are at the correct customer location.'
+      });
+    }
+
+    // Update visit status
+    const updatedVisit = await prisma.visit.update({
+      where: { id: visitId },
+      data: {
+        status: 'IN_PROGRESS',
+        actualStartTime: new Date(),
+        arrivalLocation: location,
+        arrivalPhotoUrl: arrivalPhoto
+      },
+      include: {
+        customer: true,
+        surveys: {
+          include: {
+            survey: {
+              select: {
+                id: true,
+                title: true,
+                questions: true,
+                estimatedDuration: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      data: updatedVisit
+    });
+  } catch (error) {
+    console.error('Error starting visit:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to start visit'
+    });
+  }
+});
+
+// Complete a visit
+router.post('/:visitId/complete', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { visitId } = req.params;
+    const { 
+      departureLocation, 
+      departurePhoto, 
+      visitSummary, 
+      customerFeedback,
+      nextVisitRequired,
+      nextVisitDate 
+    } = req.body;
+
+    const visit = await prisma.visit.findFirst({
+      where: {
+        id: visitId,
+        agentId: req.user!.id
+      }
+    });
+
+    if (!visit) {
+      return res.status(404).json({
+        success: false,
+        error: 'Visit not found'
+      });
+    }
+
+    if (visit.status !== 'IN_PROGRESS') {
+      return res.status(400).json({
+        success: false,
+        error: 'Visit is not in progress'
+      });
+    }
+
+    // Check if all required activities are completed
+    const incompleteSurveys = await prisma.visitSurvey.count({
+      where: {
+        visitId,
+        status: 'PENDING'
+      }
+    });
+
+    if (incompleteSurveys > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please complete all required surveys before ending the visit'
+      });
+    }
+
+    // Update visit
+    const updatedVisit = await prisma.visit.update({
+      where: { id: visitId },
+      data: {
+        status: 'COMPLETED',
+        actualEndTime: new Date(),
+        departureLocation,
+        departurePhotoUrl: departurePhoto,
+        visitSummary,
+        customerFeedback,
+        duration: visit.actualStartTime ? 
+          Math.floor((new Date().getTime() - visit.actualStartTime.getTime()) / 60000) : 0
+      }
+    });
+
+    // Schedule next visit if required
+    if (nextVisitRequired && nextVisitDate) {
+      await prisma.visit.create({
+        data: {
+          agentId: req.user!.id,
+          customerId: visit.customerId,
+          scheduledDate: new Date(nextVisitDate),
+          visitType: 'FOLLOW_UP',
+          status: 'PLANNED',
+          notes: `Follow-up visit scheduled from ${visit.id}`
+        }
+      });
+    }
+
+    res.json({
+      success: true,
+      data: updatedVisit
+    });
+  } catch (error) {
+    console.error('Error completing visit:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to complete visit'
+    });
+  }
+});
+
+// Record visit activity (photos, notes, etc.)
+router.post('/:visitId/activity', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { visitId } = req.params;
+    const { activityType, data, photos, notes } = req.body;
+
+    const visit = await prisma.visit.findFirst({
+      where: {
+        id: visitId,
+        agentId: req.user!.id,
+        status: 'IN_PROGRESS'
+      }
+    });
+
+    if (!visit) {
+      return res.status(404).json({
+        success: false,
+        error: 'Visit not found or not in progress'
+      });
+    }
+
+    // Create visit activity record
+    const activity = await prisma.visitActivity.create({
+      data: {
+        visitId,
+        activityType,
+        data: data || {},
+        photos: photos || [],
+        notes,
+        timestamp: new Date()
+      }
+    });
+
+    res.json({
+      success: true,
+      data: activity
+    });
+  } catch (error) {
+    console.error('Error recording visit activity:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to record visit activity'
+    });
+  }
+});
+
+// Get visit history
+router.get('/history', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { page = 1, limit = 20, customerId, status, dateFrom, dateTo } = req.query;
+
+    const where: any = {
+      agentId: req.user!.id
+    };
+
+    if (customerId) where.customerId = customerId;
+    if (status) where.status = status;
+    if (dateFrom || dateTo) {
+      where.scheduledDate = {};
+      if (dateFrom) where.scheduledDate.gte = new Date(dateFrom as string);
+      if (dateTo) where.scheduledDate.lte = new Date(dateTo as string);
+    }
+
+    const [visits, total] = await Promise.all([
+      prisma.visit.findMany({
+        where,
+        include: {
+          customer: {
+            select: {
+              id: true,
+              name: true,
+              address: true,
+              customerType: true
+            }
+          },
+          sales: {
+            select: {
+              id: true,
+              totalAmount: true,
+              paymentMethod: true
+            }
+          },
+          surveys: {
+            select: {
+              id: true,
+              status: true
+            }
+          }
+        },
+        orderBy: {
+          scheduledDate: 'desc'
+        },
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit)
+      }),
+      prisma.visit.count({ where })
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        visits,
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total,
+          pages: Math.ceil(total / Number(limit))
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching visit history:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch visit history'
+    });
+  }
+});
+
+// Asset audit during visit
+router.post('/:visitId/asset-audit', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { visitId } = req.params;
+    const { assets } = req.body;
+
+    const visit = await prisma.visit.findFirst({
+      where: {
+        id: visitId,
+        agentId: req.user!.id,
+        status: 'IN_PROGRESS'
+      }
+    });
+
+    if (!visit) {
+      return res.status(404).json({
+        success: false,
+        error: 'Visit not found or not in progress'
+      });
+    }
+
+    // Create asset audit records
+    const auditPromises = assets.map((asset: any) => 
+      prisma.assetAudit.create({
+        data: {
+          visitId,
+          assetId: asset.assetId,
+          condition: asset.condition,
+          isPresent: asset.isPresent,
+          photoUrl: asset.photoUrl,
+          notes: asset.notes,
+          auditDate: new Date()
+        }
+      })
+    );
+
+    const audits = await Promise.all(auditPromises);
+
+    res.json({
+      success: true,
+      data: audits
+    });
+  } catch (error) {
+    console.error('Error recording asset audit:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to record asset audit'
+    });
+  }
+});
+
+export default router;

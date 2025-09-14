@@ -1,0 +1,410 @@
+import { Router, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import { AuthenticatedRequest, authMiddleware } from '../../middleware/auth';
+
+const router = Router();
+const prisma = new PrismaClient();
+
+// Get daily cash summary
+router.get('/daily-summary', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { date } = req.query;
+    const targetDate = date ? new Date(date as string) : new Date();
+    const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
+
+    // Get cash transactions for the day
+    const cashTransactions = await prisma.sale.findMany({
+      where: {
+        agentId: req.user!.id,
+        paymentMethod: 'CASH',
+        createdAt: {
+          gte: startOfDay,
+          lte: endOfDay
+        }
+      },
+      include: {
+        customer: {
+          select: {
+            name: true
+          }
+        },
+        items: {
+          include: {
+            product: {
+              select: {
+                name: true,
+                sku: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Get starting float
+    const startingFloat = await prisma.cashFloat.findFirst({
+      where: {
+        agentId: req.user!.id,
+        date: startOfDay
+      }
+    });
+
+    // Calculate totals
+    const totalCashSales = cashTransactions.reduce((sum, sale) => sum + sale.totalAmount, 0);
+    const totalChangeGiven = cashTransactions.reduce((sum, sale) => sum + (sale.changeGiven || 0), 0);
+    const expectedCash = (startingFloat?.amount || 0) + totalCashSales - totalChangeGiven;
+
+    res.json({
+      success: true,
+      data: {
+        date: targetDate,
+        startingFloat: startingFloat?.amount || 0,
+        cashTransactions,
+        totalCashSales,
+        totalChangeGiven,
+        expectedCash,
+        transactionCount: cashTransactions.length
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching daily cash summary:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch daily cash summary'
+    });
+  }
+});
+
+// Start daily cash reconciliation
+router.post('/start-reconciliation', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { date, physicalCashCount } = req.body;
+    const targetDate = new Date(date);
+
+    // Check if reconciliation already exists
+    const existingReconciliation = await prisma.cashReconciliation.findFirst({
+      where: {
+        agentId: req.user!.id,
+        date: targetDate
+      }
+    });
+
+    if (existingReconciliation) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cash reconciliation already exists for this date'
+      });
+    }
+
+    // Get daily cash summary
+    const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
+
+    const cashTransactions = await prisma.sale.findMany({
+      where: {
+        agentId: req.user!.id,
+        paymentMethod: 'CASH',
+        createdAt: {
+          gte: startOfDay,
+          lte: endOfDay
+        }
+      }
+    });
+
+    const startingFloat = await prisma.cashFloat.findFirst({
+      where: {
+        agentId: req.user!.id,
+        date: startOfDay
+      }
+    });
+
+    const totalCashSales = cashTransactions.reduce((sum, sale) => sum + sale.totalAmount, 0);
+    const totalChangeGiven = cashTransactions.reduce((sum, sale) => sum + (sale.changeGiven || 0), 0);
+    const expectedCash = (startingFloat?.amount || 0) + totalCashSales - totalChangeGiven;
+    const variance = physicalCashCount - expectedCash;
+
+    // Create reconciliation record
+    const reconciliation = await prisma.cashReconciliation.create({
+      data: {
+        agentId: req.user!.id,
+        date: targetDate,
+        startingFloat: startingFloat?.amount || 0,
+        totalCashSales,
+        totalChangeGiven,
+        expectedCash,
+        physicalCashCount,
+        variance,
+        status: Math.abs(variance) <= 10 ? 'BALANCED' : 'VARIANCE_DETECTED', // R10 tolerance
+        cashBreakdown: physicalCashCount // In real implementation, this would be detailed breakdown
+      }
+    });
+
+    res.json({
+      success: true,
+      data: reconciliation
+    });
+  } catch (error) {
+    console.error('Error starting cash reconciliation:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to start cash reconciliation'
+    });
+  }
+});
+
+// Update cash reconciliation with detailed breakdown
+router.patch('/:reconciliationId', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { reconciliationId } = req.params;
+    const { 
+      cashBreakdown, 
+      expenses, 
+      varianceExplanation, 
+      depositAmount,
+      depositScheduled 
+    } = req.body;
+
+    const reconciliation = await prisma.cashReconciliation.findFirst({
+      where: {
+        id: reconciliationId,
+        agentId: req.user!.id
+      }
+    });
+
+    if (!reconciliation) {
+      return res.status(404).json({
+        success: false,
+        error: 'Cash reconciliation not found'
+      });
+    }
+
+    // Calculate total from breakdown
+    const totalFromBreakdown = Object.values(cashBreakdown).reduce((sum: number, value: any) => {
+      if (typeof value === 'object' && value.total) {
+        return sum + value.total;
+      }
+      return sum + (typeof value === 'number' ? value : 0);
+    }, 0);
+
+    // Update reconciliation
+    const updatedReconciliation = await prisma.cashReconciliation.update({
+      where: { id: reconciliationId },
+      data: {
+        cashBreakdown,
+        expenses: expenses || [],
+        varianceExplanation,
+        depositAmount,
+        depositScheduled,
+        physicalCashCount: totalFromBreakdown,
+        variance: totalFromBreakdown - reconciliation.expectedCash,
+        status: Math.abs(totalFromBreakdown - reconciliation.expectedCash) <= 10 ? 'BALANCED' : 'VARIANCE_DETECTED'
+      }
+    });
+
+    // If variance is significant, notify manager
+    if (Math.abs(updatedReconciliation.variance) > 50) {
+      // In real implementation, send notification to manager
+      console.log(`Significant cash variance detected: R${updatedReconciliation.variance} for agent ${req.user!.email}`);
+    }
+
+    res.json({
+      success: true,
+      data: updatedReconciliation
+    });
+  } catch (error) {
+    console.error('Error updating cash reconciliation:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update cash reconciliation'
+    });
+  }
+});
+
+// Record bank deposit
+router.post('/bank-deposit', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { 
+      reconciliationId, 
+      depositAmount, 
+      bankName, 
+      accountNumber, 
+      depositSlipNumber,
+      depositPhoto 
+    } = req.body;
+
+    const reconciliation = await prisma.cashReconciliation.findFirst({
+      where: {
+        id: reconciliationId,
+        agentId: req.user!.id
+      }
+    });
+
+    if (!reconciliation) {
+      return res.status(404).json({
+        success: false,
+        error: 'Cash reconciliation not found'
+      });
+    }
+
+    // Create bank deposit record
+    const bankDeposit = await prisma.bankDeposit.create({
+      data: {
+        agentId: req.user!.id,
+        reconciliationId,
+        amount: depositAmount,
+        bankName,
+        accountNumber,
+        depositSlipNumber,
+        depositPhotoUrl: depositPhoto,
+        depositDate: new Date(),
+        status: 'PENDING_VERIFICATION'
+      }
+    });
+
+    // Update reconciliation
+    await prisma.cashReconciliation.update({
+      where: { id: reconciliationId },
+      data: {
+        depositAmount,
+        depositCompleted: true,
+        status: 'COMPLETED'
+      }
+    });
+
+    res.json({
+      success: true,
+      data: bankDeposit
+    });
+  } catch (error) {
+    console.error('Error recording bank deposit:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to record bank deposit'
+    });
+  }
+});
+
+// Get reconciliation history
+router.get('/history', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { page = 1, limit = 20, dateFrom, dateTo, status } = req.query;
+
+    const where: any = {
+      agentId: req.user!.id
+    };
+
+    if (status) where.status = status;
+    if (dateFrom || dateTo) {
+      where.date = {};
+      if (dateFrom) where.date.gte = new Date(dateFrom as string);
+      if (dateTo) where.date.lte = new Date(dateTo as string);
+    }
+
+    const [reconciliations, total] = await Promise.all([
+      prisma.cashReconciliation.findMany({
+        where,
+        include: {
+          bankDeposit: {
+            select: {
+              id: true,
+              amount: true,
+              bankName: true,
+              depositDate: true,
+              status: true
+            }
+          }
+        },
+        orderBy: {
+          date: 'desc'
+        },
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit)
+      }),
+      prisma.cashReconciliation.count({ where })
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        reconciliations,
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total,
+          pages: Math.ceil(total / Number(limit))
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching reconciliation history:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch reconciliation history'
+    });
+  }
+});
+
+// Get cash float for date
+router.get('/cash-float', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { date } = req.query;
+    const targetDate = date ? new Date(date as string) : new Date();
+
+    const cashFloat = await prisma.cashFloat.findFirst({
+      where: {
+        agentId: req.user!.id,
+        date: new Date(targetDate.setHours(0, 0, 0, 0))
+      }
+    });
+
+    res.json({
+      success: true,
+      data: cashFloat || { amount: 0, date: targetDate }
+    });
+  } catch (error) {
+    console.error('Error fetching cash float:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch cash float'
+    });
+  }
+});
+
+// Set cash float for date
+router.post('/cash-float', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { date, amount } = req.body;
+    const targetDate = new Date(date);
+
+    const cashFloat = await prisma.cashFloat.upsert({
+      where: {
+        agentId_date: {
+          agentId: req.user!.id,
+          date: new Date(targetDate.setHours(0, 0, 0, 0))
+        }
+      },
+      update: {
+        amount
+      },
+      create: {
+        agentId: req.user!.id,
+        date: new Date(targetDate.setHours(0, 0, 0, 0)),
+        amount
+      }
+    });
+
+    res.json({
+      success: true,
+      data: cashFloat
+    });
+  } catch (error) {
+    console.error('Error setting cash float:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to set cash float'
+    });
+  }
+});
+
+export default router;

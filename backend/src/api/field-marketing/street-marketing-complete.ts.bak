@@ -1,0 +1,446 @@
+import { Router, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import { AuthenticatedRequest, authMiddleware } from '../../middleware/auth';
+
+const router = Router();
+const prisma = new PrismaClient();
+
+// Start street marketing interaction
+router.post('/interactions/start', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { campaignId, location, interactionType } = req.body;
+
+    // Validate campaign exists and agent has access
+    const campaign = await prisma.marketingCampaign.findFirst({
+      where: {
+        id: campaignId,
+        companyId: req.user!.companyId,
+        status: 'ACTIVE'
+      }
+    });
+
+    if (!campaign) {
+      return res.status(404).json({
+        success: false,
+        error: 'Campaign not found or not active'
+      });
+    }
+
+    // Validate location (simplified - in production, use proper GPS validation)
+    if (!location || !location.latitude || !location.longitude) {
+      return res.status(400).json({
+        success: false,
+        error: 'Valid GPS location required'
+      });
+    }
+
+    // Create street marketing interaction
+    const interaction = await prisma.streetMarketingInteraction.create({
+      data: {
+        campaignId,
+        agentId: req.user!.id,
+        location: {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          accuracy: location.accuracy || 0
+        },
+        interactionType: interactionType || 'CONSUMER_EDUCATION',
+        status: 'IN_PROGRESS',
+        startTime: new Date()
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        interactionId: interaction.id,
+        campaignDetails: {
+          name: campaign.name,
+          description: campaign.description,
+          materials: campaign.materials || []
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error starting street marketing interaction:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to start interaction'
+    });
+  }
+});
+
+// Record customer registration (e.g., GoldRush Online)
+router.post('/interactions/:interactionId/register-customer', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { interactionId } = req.params;
+    const {
+      customerData,
+      registrationData,
+      verificationPhotos,
+      consentGiven
+    } = req.body;
+
+    const interaction = await prisma.streetMarketingInteraction.findFirst({
+      where: {
+        id: interactionId,
+        agentId: req.user!.id,
+        status: 'IN_PROGRESS'
+      }
+    });
+
+    if (!interaction) {
+      return res.status(404).json({
+        success: false,
+        error: 'Interaction not found or not in progress'
+      });
+    }
+
+    // Validate required customer data
+    const requiredFields = ['fullName', 'surname', 'idNumber', 'contactPhone'];
+    for (const field of requiredFields) {
+      if (!customerData[field]) {
+        return res.status(400).json({
+          success: false,
+          error: `Missing required field: ${field}`
+        });
+      }
+    }
+
+    // Validate age (18+ requirement)
+    if (customerData.age < 18) {
+      return res.status(400).json({
+        success: false,
+        error: 'Customer must be 18 or older'
+      });
+    }
+
+    // Generate unique tracking code for commission
+    const trackingCode = `${req.user!.id.substring(0, 8)}-${customerData.idNumber}-${Date.now()}`;
+
+    // Create customer registration record
+    const registration = await prisma.customerRegistration.create({
+      data: {
+        interactionId,
+        fullName: customerData.fullName,
+        surname: customerData.surname,
+        idNumber: customerData.idNumber,
+        idType: customerData.idType || 'ID',
+        contactPhone: customerData.contactPhone,
+        contactEmail: customerData.contactEmail,
+        age: customerData.age,
+        consentMarketing: consentGiven,
+        verificationPhotos: verificationPhotos || [],
+        registrationData: registrationData || {},
+        trackingCode,
+        status: 'COMPLETED'
+      }
+    });
+
+    // Update interaction with registration success
+    await prisma.streetMarketingInteraction.update({
+      where: { id: interactionId },
+      data: {
+        registrationSuccess: true,
+        customerRegistrations: {
+          increment: 1
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        registrationId: registration.id,
+        trackingCode,
+        message: 'Customer registered successfully'
+      }
+    });
+  } catch (error) {
+    console.error('Error registering customer:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to register customer'
+    });
+  }
+});
+
+// Distribute SIM card (Next Cellular example)
+router.post('/interactions/:interactionId/distribute-sim', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { interactionId } = req.params;
+    const {
+      customerData,
+      simNumber,
+      servicePackage,
+      verificationPhotos
+    } = req.body;
+
+    const interaction = await prisma.streetMarketingInteraction.findFirst({
+      where: {
+        id: interactionId,
+        agentId: req.user!.id,
+        status: 'IN_PROGRESS'
+      }
+    });
+
+    if (!interaction) {
+      return res.status(404).json({
+        success: false,
+        error: 'Interaction not found or not in progress'
+      });
+    }
+
+    // Check if SIM is available in agent's inventory
+    const simInventory = await prisma.simInventory.findFirst({
+      where: {
+        agentId: req.user!.id,
+        simNumber,
+        status: 'AVAILABLE'
+      }
+    });
+
+    if (!simInventory) {
+      return res.status(400).json({
+        success: false,
+        error: 'SIM card not available in inventory'
+      });
+    }
+
+    // Generate reconciliation key
+    const reconciliationKey = `NC-${req.user!.id.substring(0, 8)}-${simNumber}-${customerData.idNumber}-${new Date().toISOString().substring(0, 10).replace(/-/g, '')}`;
+
+    // Create SIM distribution record
+    const distribution = await prisma.simDistribution.create({
+      data: {
+        interactionId,
+        agentId: req.user!.id,
+        simNumber,
+        customerData,
+        servicePackage,
+        verificationPhotos: verificationPhotos || [],
+        reconciliationKey,
+        distributionDate: new Date(),
+        status: 'DISTRIBUTED'
+      }
+    });
+
+    // Update SIM inventory status
+    await prisma.simInventory.update({
+      where: { id: simInventory.id },
+      data: {
+        status: 'DISTRIBUTED',
+        distributedAt: new Date(),
+        customerId: customerData.idNumber
+      }
+    });
+
+    // Update interaction
+    await prisma.streetMarketingInteraction.update({
+      where: { id: interactionId },
+      data: {
+        simDistributions: {
+          increment: 1
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        distributionId: distribution.id,
+        reconciliationKey,
+        message: 'SIM card distributed successfully'
+      }
+    });
+  } catch (error) {
+    console.error('Error distributing SIM card:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to distribute SIM card'
+    });
+  }
+});
+
+// Complete street marketing interaction
+router.post('/interactions/:interactionId/complete', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { interactionId } = req.params;
+    const {
+      summary,
+      totalInteractions,
+      qualityMetrics,
+      followUpRequired
+    } = req.body;
+
+    const interaction = await prisma.streetMarketingInteraction.findFirst({
+      where: {
+        id: interactionId,
+        agentId: req.user!.id,
+        status: 'IN_PROGRESS'
+      },
+      include: {
+        customerRegistrations: true,
+        simDistributions: true
+      }
+    });
+
+    if (!interaction) {
+      return res.status(404).json({
+        success: false,
+        error: 'Interaction not found or not in progress'
+      });
+    }
+
+    // Calculate performance metrics
+    const duration = interaction.startTime ? 
+      Math.floor((new Date().getTime() - interaction.startTime.getTime()) / 60000) : 0;
+
+    const performanceMetrics = {
+      duration,
+      totalCustomerInteractions: totalInteractions || 0,
+      successfulRegistrations: interaction.customerRegistrations?.length || 0,
+      simDistributions: interaction.simDistributions?.length || 0,
+      conversionRate: totalInteractions > 0 ? 
+        ((interaction.customerRegistrations?.length || 0) / totalInteractions) * 100 : 0
+    };
+
+    // Update interaction
+    const completedInteraction = await prisma.streetMarketingInteraction.update({
+      where: { id: interactionId },
+      data: {
+        status: 'COMPLETED',
+        endTime: new Date(),
+        duration,
+        summary,
+        performanceMetrics,
+        qualityMetrics: qualityMetrics || {},
+        followUpRequired: followUpRequired || false
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        interaction: completedInteraction,
+        performanceMetrics,
+        message: 'Interaction completed successfully'
+      }
+    });
+  } catch (error) {
+    console.error('Error completing interaction:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to complete interaction'
+    });
+  }
+});
+
+// Get agent's SIM inventory
+router.get('/sim-inventory', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const inventory = await prisma.simInventory.findMany({
+      where: {
+        agentId: req.user!.id
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    const summary = {
+      total: inventory.length,
+      available: inventory.filter(sim => sim.status === 'AVAILABLE').length,
+      distributed: inventory.filter(sim => sim.status === 'DISTRIBUTED').length,
+      damaged: inventory.filter(sim => sim.status === 'DAMAGED').length
+    };
+
+    res.json({
+      success: true,
+      data: {
+        inventory,
+        summary
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching SIM inventory:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch SIM inventory'
+    });
+  }
+});
+
+// Get interaction history
+router.get('/interactions/history', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { page = 1, limit = 20, campaignId, status, dateFrom, dateTo } = req.query;
+
+    const where: any = {
+      agentId: req.user!.id
+    };
+
+    if (campaignId) where.campaignId = campaignId;
+    if (status) where.status = status;
+    if (dateFrom || dateTo) {
+      where.startTime = {};
+      if (dateFrom) where.startTime.gte = new Date(dateFrom as string);
+      if (dateTo) where.startTime.lte = new Date(dateTo as string);
+    }
+
+    const [interactions, total] = await Promise.all([
+      prisma.streetMarketingInteraction.findMany({
+        where,
+        include: {
+          campaign: {
+            select: {
+              name: true,
+              description: true
+            }
+          },
+          customerRegistrations: {
+            select: {
+              id: true,
+              fullName: true,
+              trackingCode: true
+            }
+          },
+          simDistributions: {
+            select: {
+              id: true,
+              simNumber: true,
+              reconciliationKey: true
+            }
+          }
+        },
+        orderBy: {
+          startTime: 'desc'
+        },
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit)
+      }),
+      prisma.streetMarketingInteraction.count({ where })
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        interactions,
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total,
+          pages: Math.ceil(total / Number(limit))
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching interaction history:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch interaction history'
+    });
+  }
+});
+
+export default router;
