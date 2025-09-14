@@ -60,6 +60,6 @@
     "typescript": "^5.2.2"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed-simple-fixed.ts"
+    "seed": "ts-node prisma/seed-production.ts"
   }
 }

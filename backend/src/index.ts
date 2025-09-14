@@ -116,10 +116,12 @@ app.use(suspiciousActivityMiddleware());
 app.use(performanceMiddleware());
 
 // CORS configuration
+const corsOrigins = process.env.NODE_ENV === 'production' 
+  ? (process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://13.247.192.46', 'https://13.247.192.46'])
+  : ['http://localhost:3001', 'http://localhost:12001', 'http://localhost:12000'];
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://salessync.com', 'https://www.salessync.com', 'https://app.salessync.com', 'https://admin.salessync.com']
-    : ['http://localhost:3001', 'http://localhost:12001', 'http://localhost:12000'],
+  origin: corsOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID', 'X-Requested-With'],
@@ -178,7 +180,7 @@ app.get('/api/system/health', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       error: 'Failed to get system health',
-      message: error.message 
+      message: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });
@@ -229,7 +231,7 @@ app.get('/metrics', (req, res) => {
     res.status(500).json({ 
       success: false, 
       error: 'Failed to get metrics',
-      message: error.message 
+      message: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });
@@ -244,7 +246,7 @@ app.get('/api/system/errors', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       error: 'Failed to get error logs',
-      message: error.message 
+      message: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });
@@ -259,7 +261,7 @@ app.get('/api/system/alerts', (req, res) => {
     res.status(500).json({ 
       success: false, 
       error: 'Failed to get alerts',
-      message: error.message 
+      message: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });
