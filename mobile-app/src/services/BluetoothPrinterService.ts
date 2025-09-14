@@ -1,10 +1,11 @@
 /**
- * Bluetooth Printer Service for SalesSync Mobile App
- * Handles thermal printer integration for invoice printing
+ * Advanced Bluetooth Printer Service for SalesSync Mobile App
+ * Handles thermal printer integration for invoice printing with enhanced features
  */
 
-import { Platform, PermissionsAndroid } from 'react-native';
+import { Platform, PermissionsAndroid, Alert } from 'react-native';
 import BluetoothSerial from 'react-native-bluetooth-serial-next';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Buffer } from 'buffer';
 
 export interface PrinterDevice {
@@ -64,6 +65,14 @@ export interface PrintResult {
 class BluetoothPrinterService {
   private connectedDevice: PrinterDevice | null = null;
   private isConnecting = false;
+  private isPrinting = false;
+  private printQueue: any[] = [];
+  private printHistory: any[] = [];
+  private printerSettings: any = {
+    autoReconnect: true,
+    printTimeout: 30000,
+    retryAttempts: 3
+  };
 
   /**
    * Initialize Bluetooth service
@@ -535,6 +544,358 @@ class BluetoothPrinterService {
    */
   private formatCurrency(amount: number): string {
     return `R ${amount.toFixed(2)}`;
+  }
+
+  /**
+   * Add print job to queue
+   */
+  async addToQueue(printJob: any): Promise<void> {
+    this.printQueue.push({
+      ...printJob,
+      id: Date.now().toString(),
+      timestamp: new Date(),
+      status: 'queued'
+    });
+    
+    await this.processPrintQueue();
+  }
+
+  /**
+   * Process print queue
+   */
+  private async processPrintQueue(): Promise<void> {
+    if (this.isPrinting || this.printQueue.length === 0) {
+      return;
+    }
+
+    const job = this.printQueue.shift();
+    if (!job) return;
+
+    try {
+      this.isPrinting = true;
+      job.status = 'printing';
+
+      let result: PrintResult;
+      switch (job.type) {
+        case 'invoice':
+          result = await this.printInvoice(job.data, job.options);
+          break;
+        case 'receipt':
+          result = await this.printReceipt(job.data, job.options);
+          break;
+        case 'test':
+          result = await this.testPrint();
+          break;
+        default:
+          result = { success: false, error: 'Unknown print job type' };
+      }
+
+      job.status = result.success ? 'completed' : 'failed';
+      job.result = result;
+      
+      // Add to history
+      this.printHistory.push(job);
+      await this.savePrintHistory();
+
+    } catch (error) {
+      job.status = 'failed';
+      job.error = error.message;
+      this.printHistory.push(job);
+    } finally {
+      this.isPrinting = false;
+      // Process next job in queue
+      if (this.printQueue.length > 0) {
+        setTimeout(() => this.processPrintQueue(), 1000);
+      }
+    }
+  }
+
+  /**
+   * Get print queue status
+   */
+  getPrintQueueStatus(): any {
+    return {
+      queueLength: this.printQueue.length,
+      isPrinting: this.isPrinting,
+      currentJob: this.isPrinting ? this.printQueue[0] : null,
+      history: this.printHistory.slice(-10) // Last 10 jobs
+    };
+  }
+
+  /**
+   * Clear print queue
+   */
+  clearPrintQueue(): void {
+    this.printQueue = [];
+  }
+
+  /**
+   * Save print history to storage
+   */
+  private async savePrintHistory(): Promise<void> {
+    try {
+      // Keep only last 100 print jobs
+      if (this.printHistory.length > 100) {
+        this.printHistory = this.printHistory.slice(-100);
+      }
+      
+      await AsyncStorage.setItem('printHistory', JSON.stringify(this.printHistory));
+    } catch (error) {
+      console.error('Save print history error:', error);
+    }
+  }
+
+  /**
+   * Load print history from storage
+   */
+  async loadPrintHistory(): Promise<void> {
+    try {
+      const stored = await AsyncStorage.getItem('printHistory');
+      if (stored) {
+        this.printHistory = JSON.parse(stored);
+      }
+    } catch (error) {
+      console.error('Load print history error:', error);
+    }
+  }
+
+  /**
+   * Get print statistics
+   */
+  async getPrintStatistics(): Promise<any> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todayJobs = this.printHistory.filter(job => 
+      new Date(job.timestamp) >= today
+    );
+
+    const successfulJobs = this.printHistory.filter(job => 
+      job.status === 'completed'
+    );
+
+    return {
+      totalJobs: this.printHistory.length,
+      todayJobs: todayJobs.length,
+      successfulJobs: successfulJobs.length,
+      failedJobs: this.printHistory.length - successfulJobs.length,
+      successRate: this.printHistory.length > 0 
+        ? (successfulJobs.length / this.printHistory.length) * 100 
+        : 0,
+      connectedDevice: this.connectedDevice,
+      queueLength: this.printQueue.length
+    };
+  }
+
+  /**
+   * Print daily sales summary
+   */
+  async printDailySummary(salesData: any): Promise<PrintResult> {
+    if (!this.isConnected()) {
+      return {
+        success: false,
+        error: 'No printer connected'
+      };
+    }
+
+    try {
+      const commands: Buffer[] = [];
+
+      // Initialize printer
+      commands.push(this.getInitCommand());
+      commands.push(this.getAlignCommand('center'));
+      commands.push(this.getFontSizeCommand('large'));
+      commands.push(Buffer.from('DAILY SALES SUMMARY\n', 'utf8'));
+      commands.push(this.getFontSizeCommand('medium'));
+      commands.push(Buffer.from('SalesSync\n', 'utf8'));
+      commands.push(Buffer.from(this.getSeparatorLine(80) + '\n', 'utf8'));
+
+      // Summary details
+      commands.push(this.getAlignCommand('left'));
+      commands.push(Buffer.from(`Date: ${new Date().toLocaleDateString()}\n`, 'utf8'));
+      commands.push(Buffer.from(`Agent: ${salesData.agentName}\n`, 'utf8'));
+      commands.push(Buffer.from(`Territory: ${salesData.territory || 'N/A'}\n\n`, 'utf8'));
+
+      // Sales metrics
+      commands.push(Buffer.from('SALES METRICS:\n', 'utf8'));
+      commands.push(Buffer.from(`Total Sales: ${this.formatCurrency(salesData.totalSales)}\n`, 'utf8'));
+      commands.push(Buffer.from(`Total Transactions: ${salesData.transactionCount}\n`, 'utf8'));
+      commands.push(Buffer.from(`Average Transaction: ${this.formatCurrency(salesData.averageTransaction)}\n`, 'utf8'));
+      commands.push(Buffer.from(`Cash Sales: ${this.formatCurrency(salesData.cashSales)}\n`, 'utf8'));
+      commands.push(Buffer.from(`Card Sales: ${this.formatCurrency(salesData.cardSales)}\n`, 'utf8'));
+      commands.push(Buffer.from(`Credit Sales: ${this.formatCurrency(salesData.creditSales)}\n\n`, 'utf8'));
+
+      // Visit metrics
+      commands.push(Buffer.from('VISIT METRICS:\n', 'utf8'));
+      commands.push(Buffer.from(`Planned Visits: ${salesData.plannedVisits}\n`, 'utf8'));
+      commands.push(Buffer.from(`Completed Visits: ${salesData.completedVisits}\n`, 'utf8'));
+      commands.push(Buffer.from(`Success Rate: ${salesData.visitSuccessRate}%\n`, 'utf8'));
+      commands.push(Buffer.from(`Average Visit Duration: ${salesData.avgVisitDuration} min\n\n`, 'utf8'));
+
+      // Top products
+      if (salesData.topProducts && salesData.topProducts.length > 0) {
+        commands.push(Buffer.from('TOP PRODUCTS:\n', 'utf8'));
+        salesData.topProducts.slice(0, 5).forEach((product: any, index: number) => {
+          commands.push(Buffer.from(`${index + 1}. ${product.name} - ${product.quantity} units\n`, 'utf8'));
+        });
+        commands.push(Buffer.from('\n', 'utf8'));
+      }
+
+      // Footer
+      commands.push(this.getAlignCommand('center'));
+      commands.push(Buffer.from('Generated by SalesSync\n', 'utf8'));
+      commands.push(Buffer.from(`${new Date().toLocaleString()}\n\n\n`, 'utf8'));
+      commands.push(this.getCutCommand());
+
+      // Send commands to printer
+      for (const command of commands) {
+        await this.sendCommand(command);
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
+      return {
+        success: true,
+        printTime: new Date()
+      };
+
+    } catch (error) {
+      console.error('Print daily summary error:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Print barcode
+   */
+  async printBarcode(data: string, type: 'CODE128' | 'CODE39' | 'EAN13' = 'CODE128'): Promise<PrintResult> {
+    if (!this.isConnected()) {
+      return {
+        success: false,
+        error: 'No printer connected'
+      };
+    }
+
+    try {
+      const commands: Buffer[] = [];
+      
+      commands.push(this.getInitCommand());
+      commands.push(this.getAlignCommand('center'));
+      
+      // Set barcode height
+      commands.push(Buffer.from([0x1D, 0x68, 0x64])); // Height = 100 dots
+      
+      // Set barcode width
+      commands.push(Buffer.from([0x1D, 0x77, 0x02])); // Width = 2
+      
+      // Print barcode
+      let barcodeCommand: number[];
+      switch (type) {
+        case 'CODE128':
+          barcodeCommand = [0x1D, 0x6B, 0x49];
+          break;
+        case 'CODE39':
+          barcodeCommand = [0x1D, 0x6B, 0x04];
+          break;
+        case 'EAN13':
+          barcodeCommand = [0x1D, 0x6B, 0x02];
+          break;
+        default:
+          barcodeCommand = [0x1D, 0x6B, 0x49];
+      }
+      
+      commands.push(Buffer.from(barcodeCommand));
+      commands.push(Buffer.from(data.length.toString())); // Data length
+      commands.push(Buffer.from(data, 'ascii')); // Barcode data
+      
+      commands.push(Buffer.from('\n\n', 'utf8'));
+      commands.push(Buffer.from(data + '\n\n\n', 'utf8')); // Human readable
+      commands.push(this.getCutCommand());
+
+      // Send commands
+      for (const command of commands) {
+        await this.sendCommand(command);
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
+      return {
+        success: true,
+        printTime: new Date()
+      };
+
+    } catch (error) {
+      console.error('Print barcode error:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Auto-reconnect to last connected device
+   */
+  async autoReconnect(): Promise<boolean> {
+    if (!this.printerSettings.autoReconnect) {
+      return false;
+    }
+
+    try {
+      const lastDevice = await AsyncStorage.getItem('lastConnectedPrinter');
+      if (lastDevice) {
+        const device = JSON.parse(lastDevice);
+        return await this.connectToPrinter(device);
+      }
+    } catch (error) {
+      console.error('Auto-reconnect error:', error);
+    }
+    
+    return false;
+  }
+
+  /**
+   * Save last connected device
+   */
+  private async saveLastConnectedDevice(): Promise<void> {
+    if (this.connectedDevice) {
+      try {
+        await AsyncStorage.setItem('lastConnectedPrinter', JSON.stringify(this.connectedDevice));
+      } catch (error) {
+        console.error('Save last connected device error:', error);
+      }
+    }
+  }
+
+  /**
+   * Update printer settings
+   */
+  async updateSettings(settings: any): Promise<void> {
+    this.printerSettings = { ...this.printerSettings, ...settings };
+    try {
+      await AsyncStorage.setItem('printerSettings', JSON.stringify(this.printerSettings));
+    } catch (error) {
+      console.error('Update printer settings error:', error);
+    }
+  }
+
+  /**
+   * Get printer settings
+   */
+  getSettings(): any {
+    return { ...this.printerSettings };
+  }
+
+  /**
+   * Enhanced connect method with auto-save
+   */
+  async connectToPrinterEnhanced(device: PrinterDevice): Promise<boolean> {
+    const success = await this.connectToPrinter(device);
+    if (success) {
+      await this.saveLastConnectedDevice();
+    }
+    return success;
   }
 }
 
