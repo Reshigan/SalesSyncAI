@@ -1,16 +1,29 @@
 # SalesSync AI - Production Deployment
 
-🚀 **Production-ready deployment for AWS t4g.medium Ubuntu server with SSL for domain `assai.gonxt.tech`**
+🚀 **Production-ready deployment for AWS t4g.medium Ubuntu server with SSL for domain `ssai.gonxt.tech`**
 
 ## Quick Start
+
+### Option 1: Quick Deployment (Recommended)
 
 ```bash
 # Clone repository to production directory
 git clone https://github.com/Reshigan/SalesSyncAI.git /opt/salessync
 cd /opt/salessync
 
-# Run automated production deployment
-sudo ./scripts/deploy.sh
+# Run quick deployment script (as ubuntu user)
+./quick-deploy.sh
+```
+
+### Option 2: Full Production Deployment
+
+```bash
+# Clone repository to production directory
+git clone https://github.com/Reshigan/SalesSyncAI.git /opt/salessync
+cd /opt/salessync
+
+# Run as regular user (not root)
+./scripts/deploy.sh
 ```
 
 ## What's Included
@@ -192,9 +205,9 @@ docker-compose logs -f
 
 ## Access Points
 
-- **Application**: https://assai.gonxt.tech
-- **API**: https://assai.gonxt.tech/api
-- **Health Check**: https://assai.gonxt.tech/health
+- **Application**: https://ssai.gonxt.tech
+- **API**: https://ssai.gonxt.tech/api
+- **Health Check**: https://ssai.gonxt.tech/health
 
 ## Support
 
@@ -205,4 +218,4 @@ For production deployment support:
 
 ---
 
-**Ready for production deployment on AWS t4g.medium Ubuntu server with SSL for domain `assai.gonxt.tech`** 🚀
+**Ready for production deployment on AWS t4g.medium Ubuntu server with SSL for domain `ssai.gonxt.tech`** 🚀

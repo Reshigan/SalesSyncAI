@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # SalesSync AI Production Deployment Script
-# For AWS t4g.medium Ubuntu server with domain assai.gonxt.tech
+# For AWS t4g.medium Ubuntu server with domain ssai.gonxt.tech
 
 set -e
 
@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-DOMAIN="assai.gonxt.tech"
+DOMAIN="ssai.gonxt.tech"
 EMAIL="admin@gonxt.tech"
 PROJECT_DIR="/opt/salessync"
 BACKUP_DIR="/opt/salessync-backups"
