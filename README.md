@@ -72,7 +72,17 @@ SalesSync is a comprehensive multi-tenant field marketing platform designed for 
 ### Ultra-Simple Deployment (5 minutes)
 Deploy SalesSync to production with a single command:
 
-#### Option 1: V8 - Enhanced PostgreSQL Handling (NEW - Recommended)
+#### Option 1: V9 - Enhanced PostgreSQL Authentication (NEW - Recommended)
+**Perfect for production deployments with robust database authentication and setup:**
+```bash
+# With custom domain
+DOMAIN=yourdomain.com curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v9.sh | sudo -E bash
+
+# With localhost (default)
+curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v9.sh | sudo bash
+```
+
+#### Option 2: V8 - Enhanced PostgreSQL Handling (Stable)
 **Perfect for production deployments with robust database setup:**
 ```bash
 # With custom domain
@@ -82,7 +92,7 @@ DOMAIN=yourdomain.com curl -fsSL https://raw.githubusercontent.com/Reshigan/Sale
 curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v8.sh | sudo bash
 ```
 
-#### Option 2: V7 - Enhanced Error Handling (Stable)
+#### Option 3: V7 - Enhanced Error Handling (Stable)
 **Perfect for production deployments with comprehensive error tracking:**
 ```bash
 # With custom domain
@@ -92,7 +102,7 @@ DOMAIN=yourdomain.com curl -fsSL https://raw.githubusercontent.com/Reshigan/Sale
 curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v7.sh | sudo bash
 ```
 
-#### Option 3: V6 - Completely Non-Interactive (Stable)
+#### Option 4: V6 - Completely Non-Interactive (Stable)
 **Perfect for automated deployments - accepts domain via environment variable:**
 ```bash
 # With custom domain
@@ -102,18 +112,18 @@ DOMAIN=yourdomain.com curl -fsSL https://raw.githubusercontent.com/Reshigan/Sale
 curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v6.sh | sudo bash
 ```
 
-#### Option 4: V5 - Interactive Domain Input
+#### Option 5: V5 - Interactive Domain Input
 **All fixes included - environment variables, Prisma paths, zero prompts:**
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v5.sh | sudo bash
 ```
 
-#### Option 5: V4 - Zero Prompts Deployment
+#### Option 6: V4 - Zero Prompts Deployment
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v4.sh | sudo bash
 ```
 
-#### Option 6: V3 - Non-Interactive with debconf
+#### Option 7: V3 - Non-Interactive with debconf
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v3.sh | sudo bash
 ```
