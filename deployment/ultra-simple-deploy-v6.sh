@@ -47,7 +47,7 @@ echo -e "${YELLOW}🗄️ Installing PostgreSQL 15...${NC}"
 apt-get install -y postgresql-15 postgresql-client-15 postgresql-contrib-15
 
 echo -e "${YELLOW}📦 Installing additional packages...${NC}"
-apt-get install -y git nginx pm2 curl wget unzip
+apt-get install -y git nginx curl wget unzip
 
 # Start and enable PostgreSQL
 systemctl start postgresql

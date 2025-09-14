@@ -56,7 +56,7 @@ apt-get install -y \
 
 # Install other required packages
 echo -e "${YELLOW}📦 Installing additional packages...${NC}"
-apt-get install -y git nginx pm2 curl > /dev/null 2>&1
+apt-get install -y git nginx curl > /dev/null 2>&1
 
 # Start and enable PostgreSQL
 echo -e "${YELLOW}🗄️ Starting PostgreSQL...${NC}"
@@ -201,6 +201,10 @@ module.exports = {
   }]
 };
 EOF
+
+# Install PM2 globally
+echo -e "${YELLOW}📦 Installing PM2...${NC}"
+npm install -g pm2 > /dev/null 2>&1
 
 # Start services
 echo -e "${YELLOW}🚀 Starting services...${NC}"
