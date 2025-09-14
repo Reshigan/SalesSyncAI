@@ -19,13 +19,19 @@ RUN apk add --no-cache \
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package.json ./
+# Copy package files (use isolated Docker package.json)
+COPY package.docker.json ./package.json
 COPY prisma ./prisma/
 
-# Install all dependencies (including dev dependencies for build)
-# Use --no-package-lock to avoid workspace issues
-RUN npm install --no-package-lock && npm cache clean --force
+# Create a completely isolated npm environment
+RUN rm -rf ~/.npm && \
+    npm config set fund false && \
+    npm config set audit false && \
+    npm config set package-lock false && \
+    npm config set workspaces false && \
+    npm config set workspace false && \
+    npm install --no-workspaces --legacy-peer-deps --verbose && \
+    npm cache clean --force
 
 # Copy source code
 COPY . .
@@ -63,9 +69,15 @@ WORKDIR /app
 COPY --from=builder --chown=nodejs:nodejs /app/package.json ./
 COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
 
-# Install only production dependencies
-# Use --no-package-lock to avoid workspace issues
-RUN npm install --omit=dev --no-package-lock && npm cache clean --force
+# Install only production dependencies with completely isolated npm environment
+RUN rm -rf ~/.npm && \
+    npm config set fund false && \
+    npm config set audit false && \
+    npm config set package-lock false && \
+    npm config set workspaces false && \
+    npm config set workspace false && \
+    npm install --omit=dev --no-workspaces --legacy-peer-deps --verbose && \
+    npm cache clean --force
 
 # Copy built application from builder stage
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
