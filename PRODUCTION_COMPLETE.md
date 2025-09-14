@@ -55,7 +55,7 @@ cd SalesSyncAI
 
 ### **2. Run Production Deployment**
 ```bash
-./deploy-typescript-fixed.sh
+./deploy-final-fixed.sh
 ```
 
 ### **3. Setup SSL Certificate**
@@ -87,6 +87,11 @@ sudo certbot --nginx -d ssai.gonxt.tech
 - **Issue:** Missing package-lock.json and npm ci failures
 - **Solution:** Updated Dockerfiles to use `npm install` instead of `npm ci`
 - **Status:** ✅ All Docker builds complete successfully
+
+### **✅ NPM Workspace Conflicts Fixed**
+- **Issue:** `npm error: process '/bin/sh -c npm install --omit=dev' failed` due to workspace configuration
+- **Solution:** Added `--no-package-lock` flag and removed wildcard `package*.json` COPY commands
+- **Status:** ✅ Docker builds work without workspace interference
 
 ### **✅ Complete Frontend Implementation**
 - **Issue:** User requested "complete every element of every screen"
@@ -200,7 +205,7 @@ docker-compose up -d --build
 
 The SalesSync AI application is now **100% complete** and ready for production deployment. All components have been implemented, tested, and optimized for production use.
 
-**To deploy:** Simply run `./deploy-typescript-fixed.sh` on your production server!
+**To deploy:** Simply run `./deploy-final-fixed.sh` on your production server!
 
 ---
 
