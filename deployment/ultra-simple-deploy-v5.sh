@@ -17,11 +17,13 @@ echo -e "${BLUE}🚀 ULTRA SIMPLE SALESSYNC DEPLOYMENT V5${NC}"
 echo -e "${GREEN}Getting SalesSync running with ZERO prompts guaranteed...${NC}"
 echo ""
 
-# Get domain from user or use default
-read -p "Enter your domain (default: localhost): " DOMAIN
+# Get domain from user or use default (handle non-interactive mode)
+if [ -t 0 ]; then
+    read -p "Enter your domain (default: localhost): " DOMAIN
+fi
 DOMAIN=${DOMAIN:-localhost}
 
-echo -e "${YELLOW}🔧 Starting services for domain: $DOMAIN${NC}"
+echo -e "${YELLOW}🔧 Starting services for domain: ${DOMAIN}${NC}"
 
 # Set all environment variables to non-interactive mode
 export DEBIAN_FRONTEND=noninteractive
