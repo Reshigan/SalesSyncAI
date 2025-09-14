@@ -69,10 +69,34 @@ SalesSync is a comprehensive multi-tenant field marketing platform designed for 
 
 ## 🚀 Production Deployment
 
-### Ultra-Simple Deployment (5 minutes)
-Deploy SalesSync to production with a single command:
+### Live Production Deployment (Recommended)
+Deploy SalesSync to production with our comprehensive, tested deployment script:
 
-#### Option 1: V10 - Complete PostgreSQL Initialization (NEW - Recommended)
+```bash
+# One-command production deployment
+curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/live-deployment.sh | bash
+```
+
+**Features:**
+- ✅ **Complete Stack Deployment**: PostgreSQL 15, Redis, Node.js backend, React frontend
+- ✅ **Production-Ready Configuration**: Systemd services, firewall setup, health checks
+- ✅ **Comprehensive Error Handling**: Detailed logging and validation at each step
+- ✅ **Security Hardened**: Proper authentication, firewall rules, service isolation
+- ✅ **Automated Service Management**: Auto-start on boot, process monitoring
+- ✅ **Health Monitoring**: Built-in health checks and service verification
+- ✅ **Documentation**: Complete deployment guide and troubleshooting
+
+### Quick Development Deployment
+For development and testing environments:
+
+```bash
+# Quick deployment for development
+curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/quick-deploy.sh | bash
+```
+
+### Legacy Deployment Options
+
+#### Option 1: V10 - Complete PostgreSQL Initialization
 **Perfect for production deployments with complete PostgreSQL setup and initialization:**
 ```bash
 # With custom domain

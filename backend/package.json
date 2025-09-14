@@ -33,6 +33,7 @@
     "express-validator": "^7.2.1",
     "express-winston": "^4.2.0",
     "helmet": "^7.0.0",
+    "ioredis": "^5.7.0",
     "joi": "^17.10.2",
     "jsonwebtoken": "^9.0.2",
     "moment": "^2.29.4",
