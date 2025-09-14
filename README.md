@@ -72,7 +72,17 @@ SalesSync is a comprehensive multi-tenant field marketing platform designed for 
 ### Ultra-Simple Deployment (5 minutes)
 Deploy SalesSync to production with a single command:
 
-#### Option 1: V6 - Completely Non-Interactive (NEW - Recommended)
+#### Option 1: V7 - Enhanced Error Handling (NEW - Recommended)
+**Perfect for production deployments with comprehensive error tracking:**
+```bash
+# With custom domain
+DOMAIN=yourdomain.com curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v7.sh | sudo -E bash
+
+# With localhost (default)
+curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v7.sh | sudo bash
+```
+
+#### Option 2: V6 - Completely Non-Interactive (Stable)
 **Perfect for automated deployments - accepts domain via environment variable:**
 ```bash
 # With custom domain
@@ -82,33 +92,37 @@ DOMAIN=yourdomain.com curl -fsSL https://raw.githubusercontent.com/Reshigan/Sale
 curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v6.sh | sudo bash
 ```
 
-#### Option 2: V5 - Interactive Domain Input
+#### Option 3: V5 - Interactive Domain Input
 **All fixes included - environment variables, Prisma paths, zero prompts:**
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v5.sh | sudo bash
 ```
 
-#### Option 3: V4 - Zero Prompts Deployment
+#### Option 4: V4 - Zero Prompts Deployment
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v4.sh | sudo bash
 ```
 
-#### Option 4: V3 - Non-Interactive with debconf
+#### Option 5: V3 - Non-Interactive with debconf
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v3.sh | sudo bash
 ```
 
-#### Option 5: V2 - NPM Conflict Fix
+#### Option 6: V2 - NPM Conflict Fix
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/ultra-simple-deploy-v2.sh | sudo bash
 ```
 
-#### Option 6: V1 - Standard Deployment
+#### Option 7: V1 - Standard Deployment
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deployment/fixed-ultra-simple-deploy.sh | sudo bash
 ```
 
-**The V6 script (recommended) features:**
+**The V7 script (recommended) features:**
+- ✅ **Enhanced error handling** with line-by-line error tracking
+- ✅ **Service verification** - confirms all components are running
+- ✅ **Comprehensive logging** with detailed status messages
+- ✅ **Fixed PM2 installation** - resolves "Unable to locate package pm2" error
 - ✅ Completely non-interactive deployment (perfect for automation)
 - ✅ Domain configuration via environment variable
 - ✅ Fixed environment variable issues (DATABASE_URL available for Prisma)
