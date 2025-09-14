@@ -1,5 +1,5 @@
-import { PrismaClient, UserRole, VisitStatus, SyncStatus, PaymentMethod, PaymentStatus, ActivationStatus, CashReconciliationStatus } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import { PrismaClient, UserRole, VisitStatus, SyncStatus, PaymentMethod, PaymentStatus, ActivationStatus, CashReconciliationStatus, CampaignType, CampaignStatus } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -141,7 +141,7 @@ async function main() {
       firstName: 'Michael',
       lastName: 'Thompson',
       phone: '+27123456791',
-      role: UserRole.SALES_MANAGER,
+      role: UserRole.AREA_MANAGER,
       permissions: ['MANAGE_TEAM', 'VIEW_REPORTS', 'MANAGE_CAMPAIGNS'],
       profile: {
         location: 'Regional Office - Johannesburg',
@@ -214,7 +214,7 @@ async function main() {
         firstName: agent.firstName,
         lastName: agent.lastName,
         phone: agent.phone,
-        role: UserRole.FIELD_AGENT,
+        role: UserRole.FIELD_SALES_AGENT,
         permissions: ['CREATE_VISITS', 'MANAGE_CUSTOMERS', 'CREATE_ORDERS'],
         profile: {
           location: agent.location,
@@ -258,36 +258,36 @@ async function main() {
     {
       name: 'Soft Drinks',
       products: [
-        { name: 'Premium Cola 330ml', price: 12.50, sku: 'PC330', description: 'Classic cola with premium ingredients' },
-        { name: 'Premium Cola 500ml', price: 18.00, sku: 'PC500', description: 'Classic cola with premium ingredients - large size' },
-        { name: 'Orange Fizz 330ml', price: 11.50, sku: 'OF330', description: 'Natural orange flavored sparkling drink' },
-        { name: 'Lemon Lime 330ml', price: 11.50, sku: 'LL330', description: 'Refreshing lemon-lime sparkling drink' },
-        { name: 'Ginger Ale 330ml', price: 13.00, sku: 'GA330', description: 'Premium ginger ale with real ginger' }
+        { name: 'Premium Cola 330ml', unitPrice: 12.50, sku: 'PC330', description: 'Classic cola with premium ingredients' },
+        { name: 'Premium Cola 500ml', unitPrice: 18.00, sku: 'PC500', description: 'Classic cola with premium ingredients - large size' },
+        { name: 'Orange Fizz 330ml', unitPrice: 11.50, sku: 'OF330', description: 'Natural orange flavored sparkling drink' },
+        { name: 'Lemon Lime 330ml', unitPrice: 11.50, sku: 'LL330', description: 'Refreshing lemon-lime sparkling drink' },
+        { name: 'Ginger Ale 330ml', unitPrice: 13.00, sku: 'GA330', description: 'Premium ginger ale with real ginger' }
       ]
     },
     {
       name: 'Energy Drinks',
       products: [
-        { name: 'Power Boost Original', price: 25.00, sku: 'PBO250', description: 'High-energy drink with vitamins and caffeine' },
-        { name: 'Power Boost Sugar-Free', price: 25.00, sku: 'PBSF250', description: 'Sugar-free energy drink with natural sweeteners' },
-        { name: 'Extreme Energy', price: 28.00, sku: 'EE250', description: 'Maximum strength energy drink for athletes' }
+        { name: 'Power Boost Original', unitPrice: 25.00, sku: 'PBO250', description: 'High-energy drink with vitamins and caffeine' },
+        { name: 'Power Boost Sugar-Free', unitPrice: 25.00, sku: 'PBSF250', description: 'Sugar-free energy drink with natural sweeteners' },
+        { name: 'Extreme Energy', unitPrice: 28.00, sku: 'EE250', description: 'Maximum strength energy drink for athletes' }
       ]
     },
     {
       name: 'Juices',
       products: [
-        { name: '100% Orange Juice 1L', price: 35.00, sku: 'OJ1000', description: 'Pure orange juice, no added sugar' },
-        { name: '100% Apple Juice 1L', price: 32.00, sku: 'AJ1000', description: 'Pure apple juice from concentrate' },
-        { name: 'Tropical Mix 1L', price: 38.00, sku: 'TM1000', description: 'Blend of tropical fruits' },
-        { name: 'Cranberry Juice 1L', price: 42.00, sku: 'CJ1000', description: 'Pure cranberry juice with antioxidants' }
+        { name: '100% Orange Juice 1L', unitPrice: 35.00, sku: 'OJ1000', description: 'Pure orange juice, no added sugar' },
+        { name: '100% Apple Juice 1L', unitPrice: 32.00, sku: 'AJ1000', description: 'Pure apple juice from concentrate' },
+        { name: 'Tropical Mix 1L', unitPrice: 38.00, sku: 'TM1000', description: 'Blend of tropical fruits' },
+        { name: 'Cranberry Juice 1L', unitPrice: 42.00, sku: 'CJ1000', description: 'Pure cranberry juice with antioxidants' }
       ]
     },
     {
       name: 'Water',
       products: [
-        { name: 'Premium Spring Water 500ml', price: 8.00, sku: 'PSW500', description: 'Natural spring water from mountain sources' },
-        { name: 'Premium Spring Water 1.5L', price: 15.00, sku: 'PSW1500', description: 'Natural spring water - family size' },
-        { name: 'Sparkling Water 500ml', price: 10.00, sku: 'SW500', description: 'Natural sparkling mineral water' }
+        { name: 'Premium Spring Water 500ml', unitPrice: 8.00, sku: 'PSW500', description: 'Natural spring water from mountain sources' },
+        { name: 'Premium Spring Water 1.5L', unitPrice: 15.00, sku: 'PSW1500', description: 'Natural spring water - family size' },
+        { name: 'Sparkling Water 500ml', unitPrice: 10.00, sku: 'SW500', description: 'Natural sparkling mineral water' }
       ]
     }
   ];
@@ -309,17 +309,9 @@ async function main() {
           sku: product.sku,
           description: product.description,
           category: category.name,
-          price: product.price,
-          cost: product.price * 0.6, // 40% margin
+          unitPrice: product.unitPrice,
           isActive: true,
-          stockQuantity: Math.floor(Math.random() * 1000) + 100,
-          minStockLevel: 50,
-          specifications: {
-            weight: category.name === 'Water' ? (product.name.includes('1.5L') ? 1500 : 500) : 330,
-            volume: product.name.includes('1L') ? 1000 : (product.name.includes('1.5L') ? 1500 : (product.name.includes('500ml') ? 500 : 330)),
-            packaging: 'Bottle',
-            shelfLife: category.name === 'Juices' ? '12 months' : '24 months'
-          }
+
         }
       });
       createdProducts.push(createdProduct);
@@ -443,29 +435,21 @@ async function main() {
     for (const customer of customerType.customers) {
       const createdCustomer = await prisma.customer.upsert({
         where: {
-          companyId_email: {
-            companyId: demoCompany.id,
-            email: customer.email
-          }
+          id: `${demoCompany.id}-${customer.name.toLowerCase().replace(/\s+/g, '-')}`
         },
         update: {},
         create: {
           companyId: demoCompany.id,
           name: customer.name,
-          type: customerType.type,
+          category: customerType.type,
           contactPerson: customer.contactPerson,
           email: customer.email,
           phone: customer.phone,
           address: customer.address,
           isActive: true,
           creditLimit: customerType.type === 'Wholesaler' ? 100000 : (customerType.type === 'Supermarket' ? 50000 : 10000),
-          paymentTerms: customerType.type === 'Wholesaler' ? 60 : (customerType.type === 'Supermarket' ? 30 : 7),
-          profile: {
-            territory: customer.territory,
-            preferredDeliveryDay: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'][Math.floor(Math.random() * 5)],
-            specialInstructions: `${customerType.type} customer requiring regular stock rotation`,
-            lastOrderDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
-          }
+
+
         }
       });
       createdCustomers.push(createdCustomer);
@@ -473,7 +457,7 @@ async function main() {
   }
 
   // Create realistic visits with various statuses
-  const visitStatuses = [VisitStatus.COMPLETED, VisitStatus.IN_PROGRESS, VisitStatus.SCHEDULED, VisitStatus.CANCELLED];
+  const visitStatuses = [VisitStatus.COMPLETED, VisitStatus.IN_PROGRESS, VisitStatus.PLANNED, VisitStatus.CANCELLED];
   const createdVisits = [];
 
   for (let i = 0; i < 50; i++) {
@@ -487,22 +471,26 @@ async function main() {
     const visit = await prisma.visit.create({
       data: {
         companyId: demoCompany.id,
-        userId: randomAgent.id,
+        agentId: randomAgent.id,
         customerId: randomCustomer.id,
-        scheduledDate: visitDate,
-        actualDate: randomStatus === VisitStatus.COMPLETED ? visitDate : null,
+        plannedStartTime: visitDate,
+        actualStartTime: randomStatus === VisitStatus.COMPLETED ? visitDate : null,
+        actualEndTime: randomStatus === VisitStatus.COMPLETED ? new Date(visitDate.getTime() + 2 * 60 * 60 * 1000) : null,
         status: randomStatus,
-        purpose: ['Sales Visit', 'Delivery', 'Collection', 'Relationship Building', 'Product Demo'][Math.floor(Math.random() * 5)],
+
         notes: randomStatus === VisitStatus.COMPLETED ? 
           `Successful visit to ${randomCustomer.name}. Customer satisfied with service and product quality.` :
           `Scheduled visit to ${randomCustomer.name} for ${visitDate.toDateString()}`,
-        location: randomCustomer.address,
+        gpsLocation: {
+          arrival: { lat: -26.2041 + (Math.random() - 0.5) * 0.1, lng: 28.0473 + (Math.random() - 0.5) * 0.1 },
+          departure: randomStatus === VisitStatus.COMPLETED ? { lat: -26.2041 + (Math.random() - 0.5) * 0.1, lng: 28.0473 + (Math.random() - 0.5) * 0.1 } : null
+        },
         syncStatus: SyncStatus.SYNCED,
-        metadata: {
-          duration: randomStatus === VisitStatus.COMPLETED ? Math.floor(Math.random() * 120) + 30 : null,
-          weather: ['Sunny', 'Cloudy', 'Rainy'][Math.floor(Math.random() * 3)],
-          trafficCondition: ['Light', 'Moderate', 'Heavy'][Math.floor(Math.random() * 3)]
-        }
+        activities: randomStatus === VisitStatus.COMPLETED ? [
+          { type: 'customer_meeting', duration: 30, notes: 'Discussed product requirements' },
+          { type: 'product_demo', duration: 15, notes: 'Demonstrated new products' },
+          { type: 'order_taking', duration: 10, notes: 'Processed customer order' }
+        ] : []
       }
     });
     createdVisits.push(visit);
@@ -523,34 +511,35 @@ async function main() {
     let totalAmount = 0;
     for (const product of selectedProducts) {
       const quantity = Math.floor(Math.random() * 20) + 1;
-      const lineTotal = quantity * product.price;
+      const lineTotal = quantity * Number(product.unitPrice);
       totalAmount += lineTotal;
       
       orderProducts.push({
         productId: product.id,
         quantity: quantity,
-        unitPrice: product.price,
+        unitPrice: product.unitPrice,
         totalPrice: lineTotal
       });
     }
 
-    const order = await prisma.order.create({
+    const order = await prisma.sale.create({
       data: {
         companyId: demoCompany.id,
         customerId: visit.customerId,
-        userId: visit.userId,
+        agentId: visit.agentId,
         visitId: visit.id,
-        orderNumber: `ORD-${Date.now()}-${i.toString().padStart(3, '0')}`,
-        orderDate: visit.actualDate || new Date(),
+        invoiceNumber: `INV-${Date.now()}-${i.toString().padStart(3, '0')}`,
         totalAmount: totalAmount,
-        status: ['PENDING', 'CONFIRMED', 'DELIVERED', 'CANCELLED'][Math.floor(Math.random() * 4)],
-        paymentMethod: [PaymentMethod.CASH, PaymentMethod.CARD, PaymentMethod.EFT, PaymentMethod.CREDIT][Math.floor(Math.random() * 4)],
+        paymentMethod: [PaymentMethod.CASH, PaymentMethod.CARD, PaymentMethod.BANK_TRANSFER, PaymentMethod.CREDIT][Math.floor(Math.random() * 4)],
         paymentStatus: [PaymentStatus.PENDING, PaymentStatus.PAID, PaymentStatus.OVERDUE][Math.floor(Math.random() * 3)],
-        deliveryDate: new Date(visit.actualDate!.getTime() + Math.random() * 7 * 24 * 60 * 60 * 1000),
-        notes: `Order placed during visit to ${customer?.name}`,
-        syncStatus: SyncStatus.SYNCED,
-        orderItems: {
-          create: orderProducts
+        dueDate: new Date(visit.actualStartTime!.getTime() + Math.random() * 7 * 24 * 60 * 60 * 1000),
+        items: {
+          create: orderProducts.map(item => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: item.totalPrice
+          }))
         }
       }
     });
@@ -588,89 +577,27 @@ async function main() {
   ];
 
   for (const campaign of campaigns) {
-    await prisma.campaign.upsert({
-      where: {
-        companyId_name: {
-          companyId: demoCompany.id,
-          name: campaign.name
-        }
-      },
-      update: {},
-      create: {
+    await prisma.campaign.create({
+      data: {
         companyId: demoCompany.id,
         name: campaign.name,
         description: campaign.description,
+        type: CampaignType.PROMOTIONAL,
         startDate: campaign.startDate,
         endDate: campaign.endDate,
         budget: campaign.budget,
-        isActive: true,
-        settings: {
-          targetAudience: campaign.targetAudience,
-          objectives: campaign.objectives,
-          kpis: ['Sales Volume', 'Customer Acquisition', 'Brand Awareness'],
-          channels: ['Field Sales', 'Digital Marketing', 'Trade Shows']
-        }
+        status: CampaignStatus.ACTIVE,
+        targets: {
+          salesIncrease: '25%',
+          marketPenetration: '15%',
+          customerAcquisition: 500
+        },
+        territories: ['Johannesburg', 'Cape Town', 'Durban']
       }
     });
   }
 
-  // Create promotions
-  const promotions = [
-    {
-      name: 'Buy 2 Get 1 Free - Soft Drinks',
-      description: 'Special offer on all 330ml soft drinks',
-      startDate: new Date('2025-01-01'),
-      endDate: new Date('2025-01-31'),
-      discountType: 'PERCENTAGE',
-      discountValue: 33.33,
-      conditions: 'Minimum purchase of 3 units'
-    },
-    {
-      name: '10% Off Energy Drinks',
-      description: 'Discount on all energy drink variants',
-      startDate: new Date('2025-01-15'),
-      endDate: new Date('2025-02-15'),
-      discountType: 'PERCENTAGE',
-      discountValue: 10,
-      conditions: 'Valid for all energy drink products'
-    },
-    {
-      name: 'Bulk Purchase Discount',
-      description: '15% discount on orders over R500',
-      startDate: new Date('2025-01-01'),
-      endDate: new Date('2025-12-31'),
-      discountType: 'PERCENTAGE',
-      discountValue: 15,
-      conditions: 'Minimum order value R500'
-    }
-  ];
 
-  for (const promotion of promotions) {
-    await prisma.promotion.upsert({
-      where: {
-        companyId_name: {
-          companyId: demoCompany.id,
-          name: promotion.name
-        }
-      },
-      update: {},
-      create: {
-        companyId: demoCompany.id,
-        name: promotion.name,
-        description: promotion.description,
-        startDate: promotion.startDate,
-        endDate: promotion.endDate,
-        isActive: true,
-        settings: {
-          discountType: promotion.discountType,
-          discountValue: promotion.discountValue,
-          conditions: promotion.conditions,
-          applicableProducts: 'ALL',
-          maxUsagePerCustomer: 10
-        }
-      }
-    });
-  }
 
   console.log('✅ Production database seeding completed successfully!');
   console.log('');
@@ -698,14 +625,13 @@ async function main() {
   console.log(`- ${createdVisits.length} Visits`);
   console.log(`- ${Math.min(25, completedVisits.length)} Orders`);
   console.log(`- ${campaigns.length} Marketing Campaigns`);
-  console.log(`- ${promotions.length} Promotions`);
   console.log('');
   console.log('🎯 Demo Features:');
   console.log('- Comprehensive product catalog with 4 categories');
   console.log('- Realistic customer database with different business types');
   console.log('- Field sales visits with various statuses');
   console.log('- Sales orders linked to completed visits');
-  console.log('- Marketing campaigns and promotions');
+  console.log('- Marketing campaigns');
   console.log('- Multi-territory coverage (JHB, CPT, DBN, PTA)');
   console.log('- Role-based access control');
   console.log('- Complete sales workflow demonstration');
