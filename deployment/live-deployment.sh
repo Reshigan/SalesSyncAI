@@ -39,10 +39,28 @@ info() {
     echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')] INFO: $1${NC}"
 }
 
-# Check if running as root
+# Run command as actual user (not root)
+run_as_user() {
+    if [[ $EUID -eq 0 ]] && [[ -n "$SUDO_USER" ]]; then
+        sudo -u "$SUDO_USER" "$@"
+    else
+        "$@"
+    fi
+}
+
+# Check if running as root and handle sudo properly
 check_root() {
     if [[ $EUID -eq 0 ]]; then
-        error "This script should not be run as root for security reasons. Please run as a regular user with sudo privileges."
+        if [[ -z "$SUDO_USER" ]]; then
+            error "This script should not be run as root directly. Please run as a regular user with sudo privileges."
+        else
+            warn "Running with sudo. Will drop privileges for user operations."
+            ACTUAL_USER="$SUDO_USER"
+            ACTUAL_HOME=$(eval echo ~$SUDO_USER)
+        fi
+    else
+        ACTUAL_USER="$USER"
+        ACTUAL_HOME="$HOME"
     fi
 }
 
@@ -256,7 +274,7 @@ setup_repository() {
     fi
     
     # Set proper permissions
-    sudo chown -R $USER:$USER "$REPO_DIR"
+    chown -R $ACTUAL_USER:$ACTUAL_USER "$REPO_DIR"
     
     log "Repository setup completed"
 }
@@ -268,7 +286,7 @@ setup_backend() {
     cd /opt/salessync/backend
     
     # Install dependencies
-    npm install
+    run_as_user npm install
     
     # Create .env file
     cat > .env << EOF
@@ -304,11 +322,11 @@ LOG_LEVEL="info"
 EOF
     
     # Build the application
-    npm run build
+    run_as_user npm run build
     
     # Run database migrations
-    npx prisma generate
-    npx prisma db push
+    run_as_user npx prisma generate
+    run_as_user npx prisma db push
     
     log "Backend setup completed"
 }
@@ -320,7 +338,7 @@ setup_frontend() {
     cd /opt/salessync/frontend
     
     # Install dependencies
-    npm install
+    run_as_user npm install
     
     # Create production environment file
     cat > .env.production << EOF
@@ -331,7 +349,7 @@ GENERATE_SOURCEMAP=false
 EOF
     
     # Build the application
-    npm run build
+    run_as_user npm run build
     
     log "Frontend setup completed"
 }
@@ -349,7 +367,7 @@ Wants=postgresql.service redis-server.service
 
 [Service]
 Type=simple
-User=$USER
+User=$ACTUAL_USER
 WorkingDirectory=/opt/salessync/backend
 Environment=NODE_ENV=production
 ExecStart=/usr/bin/node dist/index.js
@@ -373,7 +391,7 @@ After=network.target
 
 [Service]
 Type=simple
-User=$USER
+User=$ACTUAL_USER
 WorkingDirectory=/opt/salessync/frontend
 ExecStart=/usr/bin/serve -s build -l 8080
 Restart=always
