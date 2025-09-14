@@ -20,11 +20,12 @@ RUN apk add --no-cache \
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY package.json ./
 COPY prisma ./prisma/
 
 # Install all dependencies (including dev dependencies for build)
-RUN npm install && npm cache clean --force
+# Use --no-package-lock to avoid workspace issues
+RUN npm install --no-package-lock && npm cache clean --force
 
 # Copy source code
 COPY . .
@@ -59,11 +60,12 @@ RUN adduser -S nodejs -u 1001
 WORKDIR /app
 
 # Copy package files first for production dependencies
-COPY --from=builder --chown=nodejs:nodejs /app/package*.json ./
+COPY --from=builder --chown=nodejs:nodejs /app/package.json ./
 COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
 
 # Install only production dependencies
-RUN npm install --omit=dev && npm cache clean --force
+# Use --no-package-lock to avoid workspace issues
+RUN npm install --omit=dev --no-package-lock && npm cache clean --force
 
 # Copy built application from builder stage
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
