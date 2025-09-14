@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# SalesSyncAI Production Server Deployment Script v2
-# Fixed version that handles directory cleanup properly
+# SalesSyncAI Production Server Deployment Script - Auto Version
+# Non-interactive deployment for production servers
 # Run this script directly on your production server
 
 set -e
@@ -76,14 +76,8 @@ log "  - Nginx reverse proxy"
 log "  - PM2 process manager"
 log "  - SalesSyncAI application"
 log ""
-
-# Ask for confirmation
-echo -n "Do you want to proceed with the deployment? (y/N): "
-read -r REPLY
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    log "Deployment cancelled."
-    exit 0
-fi
+log "🚀 Starting automatic deployment in 3 seconds..."
+sleep 3
 
 section "🧹 CLEANUP: Removing Old Installations"
 
@@ -111,9 +105,9 @@ safe_remove() {
         fi
         
         # Remove the directory
-        if [[ "$dir" == /opt/* ]] || [[ "$dir" == /root/* ]]; then
+        if [[ "$dir" == /opt/* ]] || [[ "$dir" == /root/* ]] && [[ "$dir" != "$APP_DIR" ]]; then
             $SUDO rm -rf "$dir" 2>/dev/null || warning "Could not remove $dir"
-        else
+        elif [[ "$dir" != /opt/* ]] && [[ "$dir" != /root/* ]]; then
             rm -rf "$dir" 2>/dev/null || warning "Could not remove $dir"
         fi
         
@@ -121,12 +115,25 @@ safe_remove() {
     fi
 }
 
-# Clean up common installation locations
+# Clean up common installation locations (but not our target directory)
 safe_remove "/opt/salessync" "SalesSync in /opt/salessync"
 safe_remove "/opt/SalesSyncAI" "SalesSyncAI in /opt/SalesSyncAI"
-safe_remove "/root/salessync" "SalesSync in /root/salessync"
-safe_remove "/root/SalesSyncAI" "SalesSyncAI in /root/SalesSyncAI"
-safe_remove "$APP_DIR" "Previous home installation"
+if [[ "$APP_DIR" != "/root/salessync" ]]; then
+    safe_remove "/root/salessync" "SalesSync in /root/salessync"
+fi
+if [[ "$APP_DIR" != "/root/SalesSyncAI" ]]; then
+    safe_remove "/root/SalesSyncAI" "SalesSyncAI in /root/SalesSyncAI"
+fi
+
+# Clean up old installation in target directory if it exists
+if [ -d "$APP_DIR" ]; then
+    warning "Found existing installation at target directory: $APP_DIR"
+    log "🗑️ Removing old installation..."
+    pm2 delete all 2>/dev/null || true
+    pm2 kill 2>/dev/null || true
+    rm -rf "$APP_DIR" 2>/dev/null || warning "Could not remove $APP_DIR"
+    log "✅ Removed old installation"
+fi
 
 # Clean up PM2 and Nginx
 pm2 delete all 2>/dev/null || true
