@@ -45,7 +45,7 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.minimal
     container_name: salessync-backend
     restart: unless-stopped
     environment:

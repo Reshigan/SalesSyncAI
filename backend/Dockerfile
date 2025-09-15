@@ -2,24 +2,24 @@
 FROM node:18-alpine AS builder
 
 # Install build dependencies for canvas and other native modules
-RUN apk add --no-cache \
+RUN apk update && apk add --no-cache \
     python3 \
     py3-pip \
     make \
     g++ \
     pkgconfig \
     cairo-dev \
-    jpeg-dev \
     pango-dev \
     musl-dev \
     giflib-dev \
     pixman-dev \
-    pangomm-dev \
     libjpeg-turbo-dev \
     freetype-dev \
-    vips-dev && \
-    ln -sf python3 /usr/bin/python && \
-    npm config set python python3
+    && ln -sf python3 /usr/bin/python \
+    && npm config set python python3 \
+    && npm config set registry https://registry.npmjs.org/ \
+    && npm config set timeout 300000 \
+    && npm config set maxsockets 1
 
 # Set working directory
 WORKDIR /app
