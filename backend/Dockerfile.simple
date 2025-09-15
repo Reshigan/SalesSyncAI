@@ -1,5 +1,9 @@
 # Simple Production Dockerfile for SalesSyncAI Backend (without canvas dependencies)
-FROM node:20-alpine AS builder
+FROM node:18-alpine AS builder
+
+# Install basic build dependencies
+RUN apk add --no-cache python3 make g++ && \
+    ln -sf python3 /usr/bin/python
 
 # Set working directory
 WORKDIR /app
@@ -9,7 +13,11 @@ COPY package.simple.json package.json
 COPY prisma ./prisma/
 
 # Install all dependencies (including dev dependencies for build)
-RUN npm install && npm cache clean --force
+RUN npm config set python python3 && \
+    npm config set fund false && \
+    npm config set audit false && \
+    npm install --legacy-peer-deps --verbose --timeout=300000 && \
+    npm cache clean --force
 
 # Copy minimal source code
 COPY src/index.minimal.ts src/index.ts

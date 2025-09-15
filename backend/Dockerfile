@@ -16,8 +16,10 @@ RUN apk add --no-cache \
     pixman-dev \
     pangomm-dev \
     libjpeg-turbo-dev \
-    freetype-dev && \
-    ln -sf python3 /usr/bin/python
+    freetype-dev \
+    vips-dev && \
+    ln -sf python3 /usr/bin/python && \
+    npm config set python python3
 
 # Set working directory
 WORKDIR /app
@@ -26,12 +28,16 @@ WORKDIR /app
 COPY package.docker.json ./package.json
 COPY prisma ./prisma/
 
-# Create a completely isolated npm environment
-RUN rm -rf ~/.npm && \
+# Create a completely isolated npm environment with better error handling
+RUN rm -rf ~/.npm /tmp/* && \
     npm config set fund false && \
     npm config set audit false && \
     npm config set package-lock false && \
-    npm install --no-workspaces --legacy-peer-deps --verbose && \
+    npm config set workspaces false && \
+    npm config set workspace false && \
+    npm config set maxsockets 1 && \
+    npm config set registry https://registry.npmjs.org/ && \
+    npm install --no-workspaces --legacy-peer-deps --no-optional --production=false --verbose --timeout=300000 && \
     npm cache clean --force
 
 # Copy source code
@@ -58,7 +64,8 @@ RUN apk add --no-cache \
     pixman \
     pangomm \
     libjpeg-turbo \
-    freetype && \
+    freetype \
+    vips && \
     ln -sf python3 /usr/bin/python
 
 # Create app user
