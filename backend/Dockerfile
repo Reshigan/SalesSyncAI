@@ -4,8 +4,10 @@ FROM node:18-alpine AS builder
 # Install build dependencies for canvas and other native modules
 RUN apk add --no-cache \
     python3 \
+    py3-pip \
     make \
     g++ \
+    pkgconfig \
     cairo-dev \
     jpeg-dev \
     pango-dev \
@@ -14,7 +16,8 @@ RUN apk add --no-cache \
     pixman-dev \
     pangomm-dev \
     libjpeg-turbo-dev \
-    freetype-dev
+    freetype-dev && \
+    ln -sf python3 /usr/bin/python
 
 # Set working directory
 WORKDIR /app
@@ -28,8 +31,6 @@ RUN rm -rf ~/.npm && \
     npm config set fund false && \
     npm config set audit false && \
     npm config set package-lock false && \
-    npm config set workspaces false && \
-    npm config set workspace false && \
     npm install --no-workspaces --legacy-peer-deps --verbose && \
     npm cache clean --force
 
@@ -48,6 +49,7 @@ FROM node:18-alpine AS production
 # Install runtime dependencies for canvas and dumb-init
 RUN apk add --no-cache \
     dumb-init \
+    python3 \
     cairo \
     jpeg \
     pango \
@@ -56,7 +58,8 @@ RUN apk add --no-cache \
     pixman \
     pangomm \
     libjpeg-turbo \
-    freetype
+    freetype && \
+    ln -sf python3 /usr/bin/python
 
 # Create app user
 RUN addgroup -g 1001 -S nodejs
@@ -65,19 +68,13 @@ RUN adduser -S nodejs -u 1001
 # Set working directory
 WORKDIR /app
 
-# Copy package files first for production dependencies
+# Copy package files and built node_modules from builder stage
 COPY --from=builder --chown=nodejs:nodejs /app/package.json ./
 COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 
-# Install only production dependencies with completely isolated npm environment
-RUN rm -rf ~/.npm && \
-    npm config set fund false && \
-    npm config set audit false && \
-    npm config set package-lock false && \
-    npm config set workspaces false && \
-    npm config set workspace false && \
-    npm install --omit=dev --no-workspaces --legacy-peer-deps --verbose && \
-    npm cache clean --force
+# Generate Prisma client for production
+RUN npx prisma generate
 
 # Copy built application from builder stage
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
