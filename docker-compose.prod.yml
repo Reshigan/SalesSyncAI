@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -15,7 +13,7 @@ services:
       - postgres_data_prod:/var/lib/postgresql/data
       - ./database/init:/docker-entrypoint-initdb.d
     ports:
-      - "5432:5432"
+      - "5433:5432"
     networks:
       - salessync-network
     healthcheck:
@@ -33,7 +31,7 @@ services:
     volumes:
       - redis_data_prod:/data
     ports:
-      - "6379:6379"
+      - "6380:6379"
     networks:
       - salessync-network
     healthcheck:
@@ -64,7 +62,7 @@ services:
       - ./backend/logs:/app/logs
       - ./backend/uploads:/app/uploads
     ports:
-      - "3000:3000"
+      - "3001:3000"
     networks:
       - salessync-network
     depends_on:
@@ -87,40 +85,21 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      REACT_APP_API_URL: ${REACT_APP_API_URL:-https://api.salessync.com}
+      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:3001}
       REACT_APP_ENVIRONMENT: production
     ports:
-      - "80:80"
-      - "443:443"
+      - "8081:80"
     networks:
       - salessync-network
     depends_on:
       - backend
-    volumes:
-      - ./ssl:/etc/nginx/ssl:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/health"]
       interval: 30s
       timeout: 10s
       retries: 5
 
-  # Nginx Load Balancer (Optional)
-  nginx:
-    image: nginx:alpine
-    container_name: salessync-nginx-prod
-    restart: unless-stopped
-    ports:
-      - "8080:80"
-      - "8443:443"
-    volumes:
-      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro
-      - ./nginx/logs:/var/log/nginx
-    networks:
-      - salessync-network
-    depends_on:
-      - backend
-      - frontend
+
 
 volumes:
   postgres_data_prod:
