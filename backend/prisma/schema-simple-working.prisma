@@ -1,0 +1,146 @@
+// Simple working Prisma schema for production deployment
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id                String   @id @default(uuid())
+  name              String
+  slug              String   @unique
+  logo              String?
+  settings          String   @default("{}")
+  subscriptionTier  String   @default("basic")
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relationships
+  users             User[]
+  customers         Customer[]
+  products          Product[]
+  visits            Visit[]
+  sales             Sale[]
+
+  @@map("companies")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  companyId   String?
+  email       String   @unique
+  password    String
+  firstName   String
+  lastName    String
+  phone       String?
+  role        String   @default("AGENT")
+  permissions String   @default("[]")
+  profile     String   @default("{}")
+  isActive    Boolean  @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  company             Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  visits              Visit[]
+  sales               Sale[]
+
+  @@map("users")
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  companyId   String?
+  name        String
+  description String?
+  sku         String
+  barcode     String?
+  category    String
+  unitPrice   Float
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  company       Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("products")
+}
+
+model Customer {
+  id            String   @id @default(uuid())
+  companyId     String?
+  name          String
+  contactPerson String?
+  phone         String?
+  email         String?
+  address       String?
+  coordinates   String?  // JSON string: {lat: number, lng: number}
+  category      String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relationships
+  company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  visits  Visit[]
+  sales   Sale[]
+
+  @@map("customers")
+}
+
+model Visit {
+  id              String      @id @default(uuid())
+  companyId       String?
+  agentId         String
+  customerId      String
+  plannedStartTime DateTime?
+  actualStartTime DateTime?
+  actualEndTime   DateTime?
+  status          String      @default("PLANNED")
+  gpsLocation     String?     // JSON string: {arrival: {lat, lng}, departure: {lat, lng}}
+  activities      String      @default("[]") // JSON string: Array of activities completed
+  photos          String      @default("[]") // JSON string: Array of photo URLs and metadata
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relationships
+  company       Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  agent         User     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  sales         Sale[]
+
+  @@map("visits")
+}
+
+model Sale {
+  id            String      @id @default(uuid())
+  companyId     String?
+  agentId       String
+  customerId    String
+  visitId       String?
+  invoiceNumber String?     @unique
+  totalAmount   Float
+  taxAmount     Float       @default(0)
+  discountAmount Float      @default(0)
+  paymentMethod String      @default("CASH")
+  paymentStatus String      @default("PENDING")
+  paidAmount    Float       @default(0)
+  dueDate       DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relationships
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  agent     User     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  customer  Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  visit     Visit?   @relation(fields: [visitId], references: [id])
+
+  @@map("sales")
+}
