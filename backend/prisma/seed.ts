@@ -6,11 +6,40 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seeding...');
 
+  // Create System Company for Super Admin
+  const systemCompany = await prisma.company.upsert({
+    where: { slug: 'system' },
+    update: {},
+    create: {
+      name: 'SalesSync System',
+      slug: 'system',
+      logo: null,
+      settings: {
+        currency: 'USD',
+        timezone: 'UTC',
+        language: 'en',
+        features: {
+          fieldSales: true,
+          marketing: true,
+          analytics: true,
+          inventory: true
+        }
+      },
+      subscriptionTier: 'enterprise',
+      isActive: true
+    }
+  });
+
   // Create Super Admin
   const superAdminPassword = await bcrypt.hash('SuperAdmin123!', 12);
   
   const superAdmin = await prisma.user.upsert({
-    where: { email: 'superadmin@salessync.com' },
+    where: { 
+      companyId_email: {
+        companyId: systemCompany.id,
+        email: 'superadmin@salessync.com'
+      }
+    },
     update: {},
     create: {
       email: 'superadmin@salessync.com',
@@ -28,7 +57,7 @@ async function main() {
           notifications: true
         }
       },
-      companyId: '00000000-0000-0000-0000-000000000000' // Placeholder for super admin
+      companyId: systemCompany.id
     }
   });
 
@@ -65,7 +94,12 @@ async function main() {
   const adminPassword = await bcrypt.hash('TestAdmin123!', 12);
   
   const companyAdmin = await prisma.user.upsert({
-    where: { email: 'admin@testcompany.com' },
+    where: { 
+      companyId_email: {
+        companyId: testCompany.id,
+        email: 'admin@testcompany.com'
+      }
+    },
     update: {},
     create: {
       companyId: testCompany.id,

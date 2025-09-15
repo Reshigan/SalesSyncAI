@@ -41,17 +41,22 @@ async function main() {
     const hashedPassword = await bcrypt.hash('Demo123!', 10);
     
     const adminUser = await prisma.user.upsert({
-      where: { email: 'demo@techcorp.com' },
+      where: { 
+        companyId_email: {
+          companyId: demoCompany.id,
+          email: 'demo@techcorp.com'
+        }
+      },
       update: {},
       create: {
         email: 'demo@techcorp.com',
         password: hashedPassword,
         firstName: 'Demo',
         lastName: 'Admin',
-        role: 'ADMIN',
+        role: 'COMPANY_ADMIN',
         isActive: true,
         companyId: demoCompany.id,
-        settings: {
+        profile: {
           notifications: { email: true, push: true },
           preferences: { theme: 'light', language: 'en' }
         }
@@ -63,17 +68,22 @@ async function main() {
     const managerPassword = await bcrypt.hash('Manager123!', 10);
     
     const managerUser = await prisma.user.upsert({
-      where: { email: 'manager@techcorp.com' },
+      where: { 
+        companyId_email: {
+          companyId: demoCompany.id,
+          email: 'manager@techcorp.com'
+        }
+      },
       update: {},
       create: {
         email: 'manager@techcorp.com',
         password: managerPassword,
         firstName: 'Sarah',
         lastName: 'Manager',
-        role: 'MANAGER',
+        role: 'REGIONAL_MANAGER',
         isActive: true,
         companyId: demoCompany.id,
-        settings: {
+        profile: {
           notifications: { email: true, push: true },
           preferences: { theme: 'light', language: 'en' }
         }
@@ -85,7 +95,12 @@ async function main() {
     const agentPassword = await bcrypt.hash('Agent123!', 10);
     
     const agentUser = await prisma.user.upsert({
-      where: { email: 'agent1@techcorp.com' },
+      where: { 
+        companyId_email: {
+          companyId: demoCompany.id,
+          email: 'agent1@techcorp.com'
+        }
+      },
       update: {},
       create: {
         email: 'agent1@techcorp.com',
@@ -95,7 +110,7 @@ async function main() {
         role: 'AGENT',
         isActive: true,
         companyId: demoCompany.id,
-        settings: {
+        profile: {
           notifications: { email: true, push: true },
           preferences: { theme: 'light', language: 'en' }
         }
