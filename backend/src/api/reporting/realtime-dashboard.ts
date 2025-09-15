@@ -443,7 +443,7 @@ async function generateRealTimeMetrics(companyId: string): Promise<RealTimeMetri
   const recentVisits: RecentVisit[] = todayVisits.slice(0, 10).map(visit => ({
     id: visit.id,
     agentName: `${visit.agent.firstName} ${visit.agent.lastName}`,
-    customerName: visit.customer.name,
+    customerName: visit.customer?.name || 'Unknown Customer',
     status: visit.status.toLowerCase() as any,
     startTime: visit.actualStartTime || visit.createdAt,
     duration: visit.actualEndTime && visit.actualStartTime 

@@ -8,6 +8,22 @@ import nodemailer from 'nodemailer';
 import twilio from 'twilio';
 import webpush from 'web-push';
 
+// Map input types to Prisma enum values
+function mapNotificationType(type: string): string {
+  const typeMap: { [key: string]: string } = {
+    'info': 'INFO',
+    'warning': 'WARNING', 
+    'error': 'ERROR',
+    'success': 'SUCCESS',
+    'fraud_alert': 'FRAUD_ALERT',
+    'system': 'SYSTEM_MAINTENANCE',
+    'campaign': 'CAMPAIGN_UPDATE',
+    'visit': 'INFO',
+    'sale': 'INFO'
+  };
+  return typeMap[type] || 'INFO';
+}
+
 const prisma = new PrismaClient();
 
 // Configure services
@@ -104,14 +120,12 @@ export async function sendNotification(input: NotificationInput): Promise<Notifi
     // Create notification record
     const notification = await prisma.notification.create({
       data: {
-        type: input.type,
+        type: mapNotificationType(input.type) as any,
         userId: input.recipientId,
         companyId: recipient.companyId,
         title: input.title,
         message: input.message,
-        data: input.data || {},
-        channels: channels,
-        status: 'PENDING'
+        data: input.data || {}
       }
     });
 
@@ -133,13 +147,13 @@ export async function sendNotification(input: NotificationInput): Promise<Notifi
 
     // Update notification status
     const overallSuccess = channelResults.some(r => r.success);
-    await prisma.notification.update({
-      where: { id: notification.id },
-      data: {
-        status: overallSuccess ? 'SENT' : 'FAILED',
-        sentAt: overallSuccess ? new Date() : null
-      }
-    });
+    // Note: Notification model doesn't have status/sentAt fields in current schema
+    // await prisma.notification.update({
+    //   where: { id: notification.id },
+    //   data: {
+    //     isRead: false // Keep as unread initially
+    //   }
+    // });
 
     return {
       success: overallSuccess,
@@ -349,7 +363,6 @@ async function sendInAppNotification(
         userId: recipient.id,
         title: input.title,
         message: input.message,
-        data: input.data || {},
         type: input.type || 'INFO',
         isRead: false
       }
@@ -605,7 +618,7 @@ export async function sendTemplatedNotification(
 
     // Replace variables in template content
     const title = template.subject ? replaceVariables(template.subject, variables) : 'Notification';
-    const message = replaceVariables(template.content, variables);
+    const message = replaceVariables(template.body, variables);
 
     return await sendNotification({
       type: template.type as any,
@@ -683,8 +696,7 @@ export async function markNotificationAsRead(
         userId
       },
       data: {
-        isRead: true,
-        readAt: new Date()
+        isRead: true
       }
     });
     return true;
@@ -707,8 +719,7 @@ export async function markAllNotificationsAsRead(userId: string): Promise<boolea
         isRead: false
       },
       data: {
-        isRead: true,
-        readAt: new Date()
+        isRead: true
       }
     });
     return true;

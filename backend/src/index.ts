@@ -38,7 +38,7 @@ app.use(cors({
     'http://ssai.gonxt.tech',
     process.env.FRONTEND_URL,
     process.env.CORS_ORIGIN
-  ].filter(Boolean),
+  ].filter((origin): origin is string => Boolean(origin)),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID'],

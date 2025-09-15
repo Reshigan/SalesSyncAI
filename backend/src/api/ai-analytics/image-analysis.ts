@@ -80,6 +80,7 @@ router.post('/shelf-space', authenticateToken, upload.single('image'), async (re
         companyId: user.companyId,
         agentId: user.userId,
         customerId: req.body.customerId || 'unknown',
+        visitDate: new Date(),
         status: 'COMPLETED',
         activities: JSON.parse(JSON.stringify({
           shelfSpaceAnalysis: analysis,

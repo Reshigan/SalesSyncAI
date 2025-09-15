@@ -625,8 +625,7 @@ async function getAgentBehaviorProfile(agentId: string): Promise<AgentBehaviorPr
     profile = await prisma.agentBehaviorProfile.create({
       data: {
         agentId,
-        companyId: '',
-        behaviorMetrics: {
+        behaviorPatterns: {
           averageVisitDuration: 1800, // 30 minutes
           typicalWorkingHours: { start: 8, end: 17 },
           averageVisitsPerDay: 8,
@@ -641,13 +640,13 @@ async function getAgentBehaviorProfile(agentId: string): Promise<AgentBehaviorPr
 
   return {
     agentId: profile.agentId,
-    averageVisitDuration: (profile.behaviorMetrics as any)?.averageVisitDuration || 0,
-    typicalWorkingHours: (profile.behaviorMetrics as any)?.typicalWorkingHours || {},
-    averageVisitsPerDay: (profile.behaviorMetrics as any)?.averageVisitsPerDay || 0,
-    averageSalesPerVisit: (profile.behaviorMetrics as any)?.averageSalesPerVisit || 0,
-    commonLocations: (profile.behaviorMetrics as any)?.commonLocations || [],
-    photoQualityAverage: (profile.behaviorMetrics as any)?.photoQualityAverage || 0,
-    suspiciousActivityCount: (profile.behaviorMetrics as any)?.suspiciousActivityCount || 0,
+    averageVisitDuration: (profile.behaviorPatterns as any)?.averageVisitDuration || 0,
+    typicalWorkingHours: (profile.behaviorPatterns as any)?.typicalWorkingHours || {},
+    averageVisitsPerDay: (profile.behaviorPatterns as any)?.averageVisitsPerDay || 0,
+    averageSalesPerVisit: (profile.behaviorPatterns as any)?.averageSalesPerVisit || 0,
+    commonLocations: (profile.behaviorPatterns as any)?.commonLocations || [],
+    photoQualityAverage: (profile.behaviorPatterns as any)?.photoQualityAverage || 0,
+    suspiciousActivityCount: (profile.behaviorPatterns as any)?.suspiciousActivityCount || 0,
     lastUpdated: profile.lastUpdated
   };
 }
@@ -731,11 +730,9 @@ async function logFraudDetectionEvent(
   await prisma.fraudDetectionLog.create({
     data: {
       agentId: input.agentId,
-      companyId: (input as any).companyId || '',
-      eventType: input.activityType,
-      riskScore: result.riskScore,
-      evidence: JSON.stringify(result.flags),
-      autoActions: input.metadata || {}
+      fraudType: input.activityType,
+      severity: result.riskScore > 0.7 ? 'HIGH' : result.riskScore > 0.4 ? 'MEDIUM' : 'LOW',
+      evidence: result.flags as any
     }
   });
 }
