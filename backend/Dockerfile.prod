@@ -85,9 +85,6 @@ COPY --from=builder --chown=salessync:nodejs /app/dist ./dist
 
 # Copy seeding scripts and other necessary files
 COPY --chown=salessync:nodejs seed-production-demo.js ./
-COPY --chown=salessync:nodejs seed-demo-simple.js ./
-COPY --chown=salessync:nodejs simple-seed.js ./
-COPY --chown=salessync:nodejs simple-production-server.js ./
 
 # Create necessary directories
 RUN mkdir -p logs uploads && chown -R salessync:nodejs logs uploads
