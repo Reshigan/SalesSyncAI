@@ -43,6 +43,19 @@ SalesSync is a comprehensive multi-tenant field marketing platform designed for 
 - **Storage**: AWS S3 for images and documents
 - **Deployment**: Docker containerized on AWS EC2
 
+## 🚀 Quick Deployment
+
+### Production Ready ✅
+All TypeScript compilation errors have been fixed and the application is ready for production deployment.
+
+```bash
+# Docker deployment (recommended)
+curl -fsSL https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/deploy-docker-production.sh -o deploy.sh
+chmod +x deploy.sh && ./deploy.sh
+```
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete deployment instructions.
+
 ## 🔐 Security & Compliance
 
 - Multi-factor authentication (MFA)
