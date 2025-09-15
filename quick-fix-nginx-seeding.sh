@@ -31,13 +31,17 @@ else
     print_success "System nginx is not running"
 fi
 
-# Step 2: Clean up any existing containers
+# Step 2: Clean up any existing containers and force rebuild
 print_status "Cleaning up existing containers..."
 docker compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
+
+# Remove backend image to ensure seeding scripts are included
+print_status "Removing backend image to force rebuild with seeding scripts..."
+docker rmi salessyncai-backend 2>/dev/null || true
 docker system prune -f 2>/dev/null || true
 
-# Step 3: Start fresh containers
-print_status "Starting fresh SalesSync AI containers..."
+# Step 3: Start fresh containers with forced rebuild
+print_status "Starting fresh SalesSync AI containers (rebuilding backend)..."
 docker compose -f docker-compose.prod.yml up -d --build
 
 # Step 4: Wait for services to be ready
