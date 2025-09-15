@@ -532,17 +532,22 @@ async function main() {
         totalAmount: totalAmount,
         paymentMethod: [PaymentMethod.CASH, PaymentMethod.CARD, PaymentMethod.BANK_TRANSFER, PaymentMethod.CREDIT][Math.floor(Math.random() * 4)],
         paymentStatus: [PaymentStatus.PENDING, PaymentStatus.PAID, PaymentStatus.OVERDUE][Math.floor(Math.random() * 3)],
-        dueDate: new Date(visit.actualStartTime!.getTime() + Math.random() * 7 * 24 * 60 * 60 * 1000),
-        items: {
-          create: orderProducts.map(item => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            total: item.totalPrice
-          }))
-        }
+        dueDate: new Date(visit.actualStartTime!.getTime() + Math.random() * 7 * 24 * 60 * 60 * 1000)
       }
     });
+
+    // Create sale items separately
+    for (const item of orderProducts) {
+      await prisma.saleItem.create({
+        data: {
+          saleId: order.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          total: item.totalPrice
+        }
+      });
+    }
   }
 
   // Create marketing campaigns
