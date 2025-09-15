@@ -78,6 +78,7 @@ router.post('/detect', authenticateToken, upload.single('image'), async (req: Re
         companyId: user.companyId,
         agentId: user.userId,
         customerId: req.body.customerId || 'unknown',
+        visitDate: new Date(),
         status: 'COMPLETED',
         activities: JSON.parse(JSON.stringify({
           brandRecognition: {

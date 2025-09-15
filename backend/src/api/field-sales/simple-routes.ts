@@ -153,6 +153,7 @@ router.post('/visits', authMiddleware, async (req: AuthenticatedRequest, res) =>
         companyId: req.user!.companyId,
         agentId,
         customerId,
+        visitDate: new Date(),
         notes: notes || '',
         status: 'PLANNED'
       },
