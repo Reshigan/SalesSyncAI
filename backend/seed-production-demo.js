@@ -45,12 +45,21 @@ try {
     execSync('npm install tsx --save-dev', { stdio: 'inherit' });
   }
   
-  // Run the TypeScript seed file
-  console.log('🌱 Compiling and running seed file...');
-  execSync('npx tsx prisma/seed-demo-production.ts', { 
-    stdio: 'inherit',
-    env: { ...process.env, NODE_ENV: 'production' }
-  });
+  // Try TypeScript seed file first, then fallback to JavaScript
+  console.log('🌱 Attempting to run TypeScript seed file...');
+  try {
+    execSync('npx tsx prisma/seed-demo-production.ts', { 
+      stdio: 'inherit',
+      env: { ...process.env, NODE_ENV: 'production' }
+    });
+  } catch (tsError) {
+    console.log('⚠️  TypeScript seeding failed, trying JavaScript fallback...');
+    console.log('🌱 Running simple JavaScript seed file...');
+    execSync('node seed-demo-simple.js', { 
+      stdio: 'inherit',
+      env: { ...process.env, NODE_ENV: 'production' }
+    });
+  }
   
   console.log('');
   console.log('✅ Production demo seeding completed successfully!');

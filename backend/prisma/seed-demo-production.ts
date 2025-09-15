@@ -403,20 +403,35 @@ async function main() {
       };
     });
 
+    // Generate unique invoice number
+    const invoiceNumber = `INV-${String(Date.now()).slice(-8)}-${String(i + 1).padStart(3, '0')}`;
+    
     const sale = await prisma.sale.create({
       data: {
         companyId: demoCompany.id,
         agentId: randomAgent.id,
         customerId: randomCustomer.id,
-        saleDate: saleDate,
+        invoiceNumber: invoiceNumber,
         totalAmount: totalAmount,
-        paymentMethod: [PaymentMethod.CREDIT, PaymentMethod.CASH, PaymentMethod.EFT][Math.floor(Math.random() * 3)],
+        paymentMethod: [PaymentMethod.CREDIT, PaymentMethod.CASH, PaymentMethod.BANK_TRANSFER][Math.floor(Math.random() * 3)],
         paymentStatus: PaymentStatus.PAID,
-        items: saleItems,
-        notes: `Sale completed for ${randomCustomer.name}. Customer satisfied with product selection and pricing.`,
-        syncStatus: SyncStatus.SYNCED
+        createdAt: saleDate
       }
     });
+
+    // Create sale items separately
+    for (const item of saleItems) {
+      await prisma.saleItem.create({
+        data: {
+          saleId: sale.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          total: item.totalPrice
+        }
+      });
+    }
+
     createdSales.push(sale);
   }
 
