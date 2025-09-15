@@ -23,6 +23,7 @@ import {
 
 import { useAuth } from '../../contexts/AuthContext';
 import Sidebar from './Sidebar';
+import GoNxtFooter from './GoNxtFooter';
 
 const DRAWER_WIDTH = 280;
 
@@ -216,6 +217,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       >
         {children}
       </Box>
+
+      {/* GoNxt Developer Footer */}
+      <GoNxtFooter />
     </Box>
   );
 };
