@@ -112,25 +112,17 @@ EOF
 fi
 
 print_header "Step 4: Building production Docker image"
-print_status "Building SalesSync with Ubuntu base (fixes npm canvas issues)..."
-docker build -f Dockerfile.ubuntu -t salessync-production . || {
-    print_error "Docker build failed. Trying alternative approach..."
-    print_status "Attempting build with canvas-free configuration..."
-    
-    # Backup original files
-    cp backend/package.json backend/package.json.backup
-    cp backend/src/utils/pdf-generator.ts backend/src/utils/pdf-generator.ts.backup 2>/dev/null || true
-    
-    # Use canvas-free configuration
-    cp backend/package.simple-no-canvas.json backend/package.json
-    cp backend/src/utils/pdf-generator-no-canvas.ts backend/src/utils/pdf-generator.ts
+print_status "Building SalesSync with production-ready configuration (canvas-free)..."
+docker build -f Dockerfile.production-ready -t salessync-production . || {
+    print_error "Production build failed. Trying Ubuntu base approach..."
+    print_status "Attempting build with Ubuntu base and canvas dependencies..."
     
     docker build -f Dockerfile.ubuntu -t salessync-production . || {
         print_error "Both build attempts failed. Please check the logs above."
         exit 1
     }
     
-    print_status "Successfully built with canvas-free configuration!"
+    print_status "Successfully built with Ubuntu base configuration!"
 }
 
 print_header "Step 5: Starting production container"
@@ -173,7 +165,7 @@ print_status "API Endpoint: http://localhost:3000/api"
 echo ""
 print_status "Container Name: salessync-prod"
 print_status "Docker Image: salessync-production"
-print_status "Configuration: Ubuntu base with canvas dependencies"
+print_status "Configuration: Production-ready (canvas-free, optimized)"
 echo ""
 print_status "Useful Commands:"
 echo "  View logs:     docker logs salessync-prod -f"
