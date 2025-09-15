@@ -1,0 +1,48 @@
+# SalesSync with Bun - Ultra-fast JavaScript runtime
+FROM oven/bun:1 AS base
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# ================================
+# Backend Build Stage
+# ================================
+FROM base AS backend-builder
+WORKDIR /app/backend
+
+# Copy backend package files and install dependencies
+COPY backend/package*.json ./
+COPY backend/bun.lockb* ./
+RUN bun install --production
+
+# Copy backend source
+COPY backend/ ./
+
+# Generate Prisma client
+RUN bunx prisma generate
+
+# Build TypeScript (if needed)
+# RUN bun run build
+
+# ================================
+# Production Stage
+# ================================
+FROM base AS production
+
+# Create application directories
+RUN mkdir -p /app/backend
+
+# Copy built applications
+COPY --from=backend-builder /app/backend /app/backend
+
+# Expose ports
+EXPOSE 3000
+
+# Set working directory
+WORKDIR /app/backend
+
+# Start the application with Bun
+CMD ["bun", "run", "src/index.ts"]

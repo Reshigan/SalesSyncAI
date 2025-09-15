@@ -1,4 +1,4 @@
-# SalesSync Complete Production Dockerfile
+# SalesSync Complete Production Dockerfile with PNPM
 # Single container with all services (Frontend, Backend, Redis, Nginx)
 
 FROM node:18-alpine AS base
@@ -28,6 +28,9 @@ RUN apk add --no-cache \
     freetype-dev \
     pkgconfig
 
+# Install pnpm globally
+RUN npm install -g pnpm
+
 # ================================
 # Dependencies Stage
 # ================================
@@ -36,19 +39,20 @@ WORKDIR /app
 
 # Copy all package files
 COPY package*.json ./
+COPY pnpm-lock.yaml* ./
 COPY backend/package*.json ./backend/
 COPY frontend/package*.json ./frontend/
 
 # Install root dependencies
-RUN yarn install --frozen-lockfile || yarn install
+RUN pnpm install --frozen-lockfile || pnpm install
 
 # Install backend dependencies
 WORKDIR /app/backend
-RUN yarn install --frozen-lockfile || yarn install
+RUN pnpm install --frozen-lockfile || pnpm install
 
 # Install frontend dependencies
 WORKDIR /app/frontend
-RUN yarn install --frozen-lockfile || yarn install
+RUN pnpm install --frozen-lockfile || pnpm install
 
 # ================================
 # Frontend Build Stage
@@ -58,7 +62,8 @@ WORKDIR /app/frontend
 
 # Copy frontend package files and install dependencies
 COPY frontend/package*.json ./
-RUN yarn install --frozen-lockfile || yarn install
+COPY frontend/pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile || pnpm install
 
 # Copy frontend source
 COPY frontend/ ./
@@ -70,7 +75,7 @@ ENV REACT_APP_ENVIRONMENT=production
 ENV GENERATE_SOURCEMAP=false
 
 # Build frontend
-RUN npm run build
+RUN pnpm run build
 
 # ================================
 # Backend Build Stage
@@ -80,7 +85,8 @@ WORKDIR /app/backend
 
 # Copy backend package files and install dependencies
 COPY backend/package*.json ./
-RUN yarn install --frozen-lockfile || yarn install
+COPY backend/pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile || pnpm install
 
 # Copy backend source
 COPY backend/ ./
@@ -89,7 +95,7 @@ COPY backend/ ./
 RUN npx prisma generate
 
 # Build TypeScript
-RUN npm run build
+RUN pnpm run build
 
 # ================================
 # Production Stage
