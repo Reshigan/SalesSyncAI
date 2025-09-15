@@ -1,0 +1,83 @@
+# Multi-stage production Dockerfile
+FROM node:18-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY backend/package*.json ./backend/
+COPY frontend/package*.json ./frontend/
+
+# Install dependencies with fallback for missing lockfiles
+RUN npm ci --only=production --no-audit --no-fund || npm install --only=production --no-audit --no-fund
+RUN cd backend && (npm ci --only=production --no-audit --no-fund || npm install --only=production --no-audit --no-fund)
+RUN cd frontend && (npm ci --only=production --no-audit --no-fund || npm install --only=production --no-audit --no-fund)
+
+# Build frontend
+FROM base AS frontend-builder
+WORKDIR /app/frontend
+
+# Copy frontend package files and install all dependencies (including dev)
+COPY frontend/package*.json ./
+RUN npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+
+# Copy frontend source
+COPY frontend/ ./
+
+# Build frontend for production
+ENV NODE_ENV=production
+ENV REACT_APP_API_URL=/api
+RUN npm run build
+
+# Build backend
+FROM base AS backend-builder
+WORKDIR /app/backend
+
+# Copy backend package files and install all dependencies
+COPY backend/package*.json ./
+RUN npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+
+# Copy backend source
+COPY backend/ ./
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Production image
+FROM base AS production
+WORKDIR /app
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy production dependencies
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/backend/node_modules ./backend/node_modules
+
+# Copy built frontend
+COPY --from=frontend-builder /app/build ./frontend/build
+
+# Copy backend source and built assets
+COPY --from=backend-builder /app/backend ./backend
+
+# Copy root package.json
+COPY package*.json ./
+
+# Create necessary directories and set permissions
+RUN mkdir -p /app/logs && chown -R nextjs:nodejs /app
+
+# Switch to non-root user
+USER nextjs
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
+
+# Start the production server
+CMD ["node", "backend/src/server-production.js"]
