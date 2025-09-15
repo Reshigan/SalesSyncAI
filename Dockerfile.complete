@@ -1,0 +1,439 @@
+# SalesSync Complete Production Dockerfile
+# Single container with all services (Frontend, Backend, Redis, Nginx)
+
+FROM node:18-alpine AS base
+
+# Install system dependencies
+RUN apk add --no-cache \
+    libc6-compat \
+    python3 \
+    make \
+    g++ \
+    curl \
+    bash \
+    postgresql-client \
+    redis \
+    nginx \
+    supervisor \
+    openssl \
+    tzdata
+
+# ================================
+# Dependencies Stage
+# ================================
+FROM base AS deps
+WORKDIR /app
+
+# Copy all package files
+COPY package*.json ./
+COPY backend/package*.json ./backend/
+COPY frontend/package*.json ./frontend/
+
+# Install root dependencies
+RUN npm ci || npm install
+
+# Install backend dependencies
+WORKDIR /app/backend
+RUN npm ci || npm install
+
+# Install frontend dependencies
+WORKDIR /app/frontend
+RUN npm ci || npm install
+
+# ================================
+# Frontend Build Stage
+# ================================
+FROM base AS frontend-builder
+WORKDIR /app/frontend
+
+# Copy frontend package files and install dependencies
+COPY frontend/package*.json ./
+RUN npm ci || npm install
+
+# Copy frontend source
+COPY frontend/ ./
+
+# Set build environment
+ENV NODE_ENV=production
+ENV REACT_APP_API_URL=/api
+ENV REACT_APP_ENVIRONMENT=production
+ENV GENERATE_SOURCEMAP=false
+
+# Build frontend
+RUN npm run build
+
+# ================================
+# Backend Build Stage
+# ================================
+FROM base AS backend-builder
+WORKDIR /app/backend
+
+# Copy backend package files and install dependencies
+COPY backend/package*.json ./
+RUN npm ci || npm install
+
+# Copy backend source
+COPY backend/ ./
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Build TypeScript
+RUN npm run build
+
+# ================================
+# Production Stage
+# ================================
+FROM base AS production
+
+# Create application directories
+RUN mkdir -p \
+    /app/backend \
+    /app/frontend \
+    /var/log/supervisor \
+    /var/log/nginx \
+    /var/cache/nginx \
+    /var/run/nginx \
+    /run/redis \
+    /var/lib/redis
+
+# Copy built applications
+COPY --from=frontend-builder /app/frontend/build /usr/share/nginx/html
+COPY --from=backend-builder /app/backend /app/backend
+COPY --from=deps /app/backend/node_modules /app/backend/node_modules
+
+# Create nginx configuration
+RUN cat > /etc/nginx/nginx.conf << 'EOF'
+user nginx;
+worker_processes auto;
+error_log /var/log/nginx/error.log warn;
+pid /var/run/nginx.pid;
+
+events {
+    worker_connections 1024;
+    use epoll;
+    multi_accept on;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    # Logging
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
+    access_log /var/log/nginx/access.log main;
+
+    # Performance
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+    client_max_body_size 100M;
+
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_comp_level 6;
+    gzip_types
+        text/plain
+        text/css
+        text/xml
+        text/javascript
+        application/javascript
+        application/xml+rss
+        application/json
+        application/xml
+        image/svg+xml;
+
+    server {
+        listen 80;
+        server_name localhost;
+        root /usr/share/nginx/html;
+        index index.html;
+
+        # Security headers
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "no-referrer-when-downgrade" always;
+        add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline' 'unsafe-eval'" always;
+
+        # Handle client-side routing
+        location / {
+            try_files $uri $uri/ /index.html;
+            add_header Cache-Control "no-cache, no-store, must-revalidate";
+            add_header Pragma "no-cache";
+            add_header Expires "0";
+        }
+
+        # Cache static assets
+        location /static/ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+            try_files $uri =404;
+        }
+
+        # API proxy to backend
+        location /api/ {
+            proxy_pass http://127.0.0.1:3000/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_connect_timeout 60s;
+            proxy_send_timeout 60s;
+            proxy_read_timeout 60s;
+            proxy_buffering off;
+        }
+
+        # Health check endpoint
+        location /health {
+            access_log off;
+            return 200 "OK\n";
+            add_header Content-Type text/plain;
+        }
+
+        # Nginx status (for monitoring)
+        location /nginx-status {
+            stub_status on;
+            access_log off;
+            allow 127.0.0.1;
+            deny all;
+        }
+    }
+}
+EOF
+
+# Create Redis configuration
+RUN cat > /etc/redis.conf << 'EOF'
+# Redis configuration for SalesSync
+bind 127.0.0.1
+port 6379
+timeout 0
+tcp-keepalive 300
+daemonize no
+supervised no
+pidfile /var/run/redis.pid
+loglevel notice
+logfile /var/log/redis.log
+databases 16
+save 900 1
+save 300 10
+save 60 10000
+stop-writes-on-bgsave-error yes
+rdbcompression yes
+rdbchecksum yes
+dbfilename dump.rdb
+dir /var/lib/redis
+requirepass ${REDIS_PASSWORD}
+maxmemory 256mb
+maxmemory-policy allkeys-lru
+appendonly yes
+appendfilename "appendonly.aof"
+appendfsync everysec
+no-appendfsync-on-rewrite no
+auto-aof-rewrite-percentage 100
+auto-aof-rewrite-min-size 64mb
+EOF
+
+# Create supervisor configuration
+RUN cat > /etc/supervisor/conf.d/supervisord.conf << 'EOF'
+[supervisord]
+nodaemon=true
+user=root
+logfile=/var/log/supervisor/supervisord.log
+pidfile=/var/run/supervisord.pid
+childlogdir=/var/log/supervisor
+
+[program:nginx]
+command=nginx -g "daemon off;"
+autostart=true
+autorestart=true
+startretries=3
+stderr_logfile=/var/log/supervisor/nginx.err.log
+stdout_logfile=/var/log/supervisor/nginx.out.log
+priority=100
+
+[program:redis]
+command=redis-server /etc/redis.conf
+autostart=true
+autorestart=true
+startretries=3
+stderr_logfile=/var/log/supervisor/redis.err.log
+stdout_logfile=/var/log/supervisor/redis.out.log
+priority=200
+
+[program:backend]
+command=node /app/backend/dist/index.js
+directory=/app/backend
+autostart=true
+autorestart=true
+startretries=3
+stderr_logfile=/var/log/supervisor/backend.err.log
+stdout_logfile=/var/log/supervisor/backend.out.log
+environment=NODE_ENV=production,PORT=3000
+priority=300
+EOF
+
+# Create application startup script
+RUN cat > /app/start.sh << 'EOF'
+#!/bin/bash
+set -e
+
+echo "🚀 Starting SalesSync Production Application..."
+
+# Set timezone
+export TZ=${TZ:-UTC}
+
+# Wait for PostgreSQL to be ready
+echo "⏳ Waiting for PostgreSQL connection..."
+timeout=60
+while ! pg_isready -h ${POSTGRES_HOST:-postgres} -p ${POSTGRES_PORT:-5432} -U ${POSTGRES_USER:-salessync_user} -q; do
+    timeout=$((timeout - 1))
+    if [ $timeout -eq 0 ]; then
+        echo "❌ PostgreSQL connection timeout"
+        exit 1
+    fi
+    echo "PostgreSQL is unavailable - sleeping (${timeout}s remaining)"
+    sleep 1
+done
+echo "✅ PostgreSQL is ready"
+
+# Navigate to backend directory
+cd /app/backend
+
+# Run database migrations
+echo "🔄 Running database migrations..."
+if ! npx prisma migrate deploy; then
+    echo "⚠️  Migration failed, trying db push..."
+    npx prisma db push --accept-data-loss || {
+        echo "❌ Database setup failed"
+        exit 1
+    }
+fi
+
+# Generate Prisma client
+echo "🔧 Generating Prisma client..."
+npx prisma generate
+
+# Seed database if requested
+if [ "${SEED_DATABASE:-false}" = "true" ]; then
+    echo "🌱 Seeding database..."
+    npm run seed:demo:simple 2>/dev/null || node -e "
+    const { PrismaClient } = require('@prisma/client');
+    const bcrypt = require('bcryptjs');
+    const prisma = new PrismaClient();
+    
+    async function seed() {
+      try {
+        console.log('Creating demo company...');
+        const company = await prisma.company.upsert({
+          where: { email: 'admin@salessync.com' },
+          update: {},
+          create: {
+            name: 'SalesSync Demo Company',
+            email: 'admin@salessync.com',
+            phone: '+1-555-0123',
+            address: '123 Business Avenue',
+            city: 'Business City',
+            state: 'Business State',
+            country: 'USA',
+            zipCode: '12345'
+          }
+        });
+        
+        console.log('Creating demo admin user...');
+        const hashedPassword = await bcrypt.hash('Admin123!', 10);
+        
+        await prisma.user.upsert({
+          where: { email: 'admin@salessync.com' },
+          update: {},
+          create: {
+            email: 'admin@salessync.com',
+            password: hashedPassword,
+            firstName: 'Admin',
+            lastName: 'User',
+            role: 'ADMIN',
+            companyId: company.id,
+            isActive: true,
+            emailVerified: true
+          }
+        });
+        
+        console.log('✅ Demo data seeded successfully');
+        console.log('Login credentials:');
+        console.log('  Email: admin@salessync.com');
+        console.log('  Password: Admin123!');
+      } catch (error) {
+        console.error('❌ Seeding failed:', error.message);
+      }
+    }
+    
+    seed().finally(() => prisma.\$disconnect());
+    " || echo "⚠️  Seeding completed with warnings"
+fi
+
+echo "🎯 Starting services with supervisor..."
+
+# Start supervisor
+exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+EOF
+
+# Make scripts executable
+RUN chmod +x /app/start.sh
+
+# Create application user for security
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -S appuser -u 1001 -G appgroup
+
+# Set proper permissions
+RUN chown -R appuser:appgroup /app && \
+    chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/log/nginx && \
+    chown -R redis:redis /var/lib/redis && \
+    chmod -R 755 /var/log/supervisor
+
+# Create health check script
+RUN cat > /app/healthcheck.sh << 'EOF'
+#!/bin/bash
+# Comprehensive health check
+
+# Check nginx
+if ! curl -f -s http://localhost/health > /dev/null; then
+    echo "Nginx health check failed"
+    exit 1
+fi
+
+# Check backend API
+if ! curl -f -s http://localhost/api/health > /dev/null; then
+    echo "Backend API health check failed"
+    exit 1
+fi
+
+# Check Redis
+if ! redis-cli -p 6379 -a "${REDIS_PASSWORD}" ping > /dev/null 2>&1; then
+    echo "Redis health check failed"
+    exit 1
+fi
+
+echo "All services healthy"
+exit 0
+EOF
+
+RUN chmod +x /app/healthcheck.sh
+
+# Expose ports
+EXPOSE 80 3000 6379
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD /app/healthcheck.sh
+
+# Set working directory
+WORKDIR /app
+
+# Start the application
+CMD ["/app/start.sh"]
