@@ -1,0 +1,21 @@
+<svg width="120" height="40" viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1976d2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#42a5f5;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="120" height="40" rx="8" fill="url(#gradient)" />
+  
+  <!-- GoNxt Text -->
+  <text x="60" y="26" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">
+    GoNxt
+  </text>
+  
+  <!-- Tagline -->
+  <text x="60" y="36" font-family="Arial, sans-serif" font-size="8" text-anchor="middle" fill="rgba(255,255,255,0.8)">
+    SOLUTIONS
+  </text>
+</svg>

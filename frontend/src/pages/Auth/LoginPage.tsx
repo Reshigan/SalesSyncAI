@@ -25,6 +25,7 @@ import * as yup from 'yup';
 
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
+import GoNxtFooter from '../../components/Layout/GoNxtFooter';
 
 interface LoginFormData {
   email: string;
@@ -68,11 +69,11 @@ const LoginPage: React.FC = () => {
   };
 
   const demoCredentials = [
-    { role: 'Super Admin', email: 'superadmin@salessync.com', password: 'admin123' },
-    { role: 'Company Admin', email: 'admin@testcompany.com', password: 'admin123' },
-    { role: 'Field Sales Agent', email: 'agent@testcompany.com', password: 'admin123' },
-    { role: 'Marketing Agent', email: 'marketing@testcompany.com', password: 'admin123' },
-    { role: 'Promoter', email: 'promoter@testcompany.com', password: 'admin123' },
+    { role: 'Company Admin', email: 'demo@techcorp.com', password: 'Demo123!' },
+    { role: 'Area Manager', email: 'manager@techcorp.com', password: 'Manager123!' },
+    { role: 'Field Sales Agent', email: 'agent1@techcorp.com', password: 'Agent123!' },
+    { role: 'Field Sales Agent', email: 'agent2@techcorp.com', password: 'Agent123!' },
+    { role: 'Field Sales Agent', email: 'agent3@techcorp.com', password: 'Agent123!' },
   ];
 
   const fillDemoCredentials = (email: string, password: string) => {
@@ -243,13 +244,16 @@ const LoginPage: React.FC = () => {
             <Divider sx={{ my: 3 }} />
 
             <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-              <strong>Test Company:</strong> TestCompany Ltd
+              <strong>Demo Company:</strong> TechCorp Solutions
               <br />
-              <strong>Features:</strong> 2+ years of demo data
+              <strong>Features:</strong> Complete tech product catalog with realistic sales data
             </Typography>
           </CardContent>
         </Card>
       </Box>
+
+      {/* GoNxt Developer Footer */}
+      <GoNxtFooter />
     </Box>
   );
 };
