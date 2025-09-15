@@ -28,7 +28,17 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://work-2-necpxcrvufxzrged.prod-runtime.all-hands.dev'],
+  origin: [
+    'http://localhost:3000', 
+    'https://work-2-necpxcrvufxzrged.prod-runtime.all-hands.dev',
+    'http://13.247.192.46',
+    'https://13.247.192.46',
+    'http://13.247.192.46:80',
+    'https://ssai.gonxt.tech',
+    'http://ssai.gonxt.tech',
+    process.env.FRONTEND_URL,
+    process.env.CORS_ORIGIN
+  ].filter(Boolean),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID'],
