@@ -79,11 +79,15 @@ else
 fi
 
 print_status "Step 8: Seeding database with demo users..."
+cd backend
+echo "Current directory: $(pwd)"
+echo "Using seed script: $(grep -A 2 '"prisma"' package.json | grep seed)"
 npx prisma db seed
 print_success "Database seeded with demo users"
+cd ..
 
 print_status "Step 9: Building frontend with new UI..."
-cd ../frontend
+cd frontend
 npm install
 npm run build
 print_success "Frontend built with new edgy UI"
