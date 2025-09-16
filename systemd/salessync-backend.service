@@ -1,0 +1,48 @@
+[Unit]
+Description=SalesSync Backend API Service
+Documentation=https://github.com/Reshigan/SalesSyncAI
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=forking
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/SalesSyncAI
+Environment=NODE_ENV=production
+Environment=PORT=3001
+Environment=DATABASE_URL=postgresql://salessync:salessync123@localhost:5432/salessync
+Environment=JWT_SECRET=your-super-secret-jwt-key-change-in-production
+Environment=BCRYPT_ROUNDS=12
+
+# PM2 commands
+ExecStart=/usr/bin/pm2 start /home/ubuntu/SalesSyncAI/ecosystem.config.js --only backend
+ExecReload=/usr/bin/pm2 reload /home/ubuntu/SalesSyncAI/ecosystem.config.js --only backend
+ExecStop=/usr/bin/pm2 stop backend
+
+# Restart policy
+Restart=always
+RestartSec=10
+StartLimitInterval=60s
+StartLimitBurst=3
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/home/ubuntu/SalesSyncAI
+ReadWritePaths=/tmp
+ReadWritePaths=/var/log
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=salessync-backend
+
+[Install]
+WantedBy=multi-user.target

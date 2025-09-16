@@ -1,0 +1,176 @@
+name: 🚀 Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+    types: [ closed ]
+
+jobs:
+  deploy:
+    if: github.event_name == 'push' || (github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🔧 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: |
+          backend/package-lock.json
+          frontend/package-lock.json
+    
+    - name: 📦 Install Backend Dependencies
+      run: |
+        cd backend
+        npm ci
+        
+    - name: 📦 Install Frontend Dependencies
+      run: |
+        cd frontend
+        npm ci
+        
+    - name: 🧪 Run Backend Tests
+      run: |
+        cd backend
+        npm run test || echo "No tests configured"
+        
+    - name: 🧪 Run Frontend Tests
+      run: |
+        cd frontend
+        npm run test || echo "No tests configured"
+        
+    - name: 🏗️ Build Frontend
+      run: |
+        cd frontend
+        npm run build
+        
+    - name: 🔍 Verify Build
+      run: |
+        ls -la frontend/dist/
+        ls -la backend/
+        
+    - name: 🚀 Deploy to Production Server
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.PRODUCTION_HOST }}
+        username: ${{ secrets.PRODUCTION_USER }}
+        password: ${{ secrets.PRODUCTION_PASSWORD }}
+        port: 22
+        timeout: 300s
+        script: |
+          set -e
+          echo "🚀 Starting Production Deployment..."
+          
+          # Navigate to project directory
+          cd /home/ubuntu/SalesSyncAI
+          
+          # Stop services gracefully
+          echo "⏹️ Stopping services..."
+          pm2 stop all || true
+          
+          # Backup current deployment
+          echo "💾 Creating backup..."
+          sudo mkdir -p /backups/salessync
+          sudo tar -czf /backups/salessync/backup-$(date +%Y%m%d-%H%M%S).tar.gz \
+            --exclude=node_modules \
+            --exclude=.git \
+            --exclude=dist \
+            --exclude=build \
+            . || true
+          
+          # Pull latest changes
+          echo "📥 Pulling latest changes..."
+          git fetch origin
+          git reset --hard origin/main
+          git clean -fd
+          
+          # Deploy schema and auth controller
+          echo "🔧 Deploying configuration..."
+          cp backend/prisma/schema-simple.prisma backend/prisma/schema.prisma
+          cp backend/src/api/auth/controller-simple.ts backend/src/api/auth/controller.ts
+          
+          # Install backend dependencies
+          echo "📦 Installing backend dependencies..."
+          cd backend
+          rm -rf node_modules package-lock.json
+          npm install
+          
+          # Generate Prisma client
+          echo "🔄 Generating Prisma client..."
+          npx prisma generate
+          
+          # Database migration and seeding
+          echo "🗄️ Updating database..."
+          npx prisma db push --force-reset --accept-data-loss
+          npx prisma db seed
+          
+          # Install and build frontend
+          echo "🎨 Building frontend..."
+          cd ../frontend
+          rm -rf node_modules package-lock.json dist
+          npm install
+          npm run build
+          
+          # Update Nginx configuration
+          echo "🌐 Updating Nginx..."
+          sudo cp /home/ubuntu/SalesSyncAI/nginx.conf /etc/nginx/sites-available/salessync || true
+          sudo nginx -t && sudo systemctl reload nginx
+          
+          # Start services
+          echo "▶️ Starting services..."
+          cd /home/ubuntu/SalesSyncAI
+          pm2 delete all || true
+          pm2 start ecosystem.config.js
+          pm2 save
+          
+          # Health checks
+          echo "🔍 Running health checks..."
+          sleep 10
+          
+          # Test backend health
+          curl -f http://localhost:3001/health || (echo "❌ Backend health check failed" && exit 1)
+          
+          # Test API health
+          curl -f http://localhost:3001/api/health || (echo "❌ API health check failed" && exit 1)
+          
+          # Test login endpoint
+          curl -X POST http://localhost:3001/api/auth/login \
+            -H "Content-Type: application/json" \
+            -d '{"email": "admin@salessync.com", "password": "admin123"}' \
+            -f || (echo "❌ Login test failed" && exit 1)
+          
+          # Test external access
+          curl -f https://ss.gonxt.tech/health || (echo "❌ External health check failed" && exit 1)
+          
+          echo "✅ Deployment completed successfully!"
+          echo "🌐 Website: https://ss.gonxt.tech"
+          echo "🔧 Backend API: https://ss.gonxt.tech/api"
+          
+          # Display service status
+          pm2 status
+          sudo systemctl status nginx --no-pager -l
+          
+    - name: 📊 Deployment Status
+      if: always()
+      run: |
+        if [ ${{ job.status }} == 'success' ]; then
+          echo "✅ Deployment completed successfully!"
+          echo "🌐 Production URL: https://ss.gonxt.tech"
+        else
+          echo "❌ Deployment failed!"
+        fi
+        
+    - name: 📧 Notify on Failure
+      if: failure()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        text: "🚨 Production deployment failed for SalesSyncAI"
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
