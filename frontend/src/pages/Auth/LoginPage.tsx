@@ -11,13 +11,16 @@ import {
   IconButton,
   Link,
   Divider,
+  createTheme,
+  ThemeProvider,
 } from '@mui/material';
 import {
   Visibility,
   VisibilityOff,
   Email,
   Lock,
-  Business,
+  Bolt,
+  TrendingUp,
 } from '@mui/icons-material';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -69,12 +72,109 @@ const LoginPage: React.FC = () => {
   };
 
   const demoCredentials = [
-    { role: 'Company Admin', email: 'demo@techcorp.com', password: 'Demo123!' },
-    { role: 'Area Manager', email: 'manager@techcorp.com', password: 'Manager123!' },
-    { role: 'Field Sales Agent', email: 'agent1@techcorp.com', password: 'Agent123!' },
-    { role: 'Field Sales Agent', email: 'agent2@techcorp.com', password: 'Agent123!' },
-    { role: 'Field Sales Agent', email: 'agent3@techcorp.com', password: 'Agent123!' },
+    { role: 'Company Admin', email: 'admin@demo.com', password: 'admin123', icon: '👑' },
+    { role: 'Regional Manager', email: 'manager@demo.com', password: 'manager123', icon: '📊' },
+    { role: 'Field Sales Agent', email: 'sales@demo.com', password: 'sales123', icon: '🚀' },
+    { role: 'Agent', email: 'user@demo.com', password: 'user123', icon: '⚡' },
   ];
+
+  // Dark Orange Theme
+  const darkOrangeTheme = createTheme({
+    palette: {
+      mode: 'dark',
+      primary: {
+        main: '#FF6B35',
+        dark: '#E55A2B',
+        light: '#FF8A65',
+      },
+      secondary: {
+        main: '#FF9500',
+        dark: '#E6850E',
+        light: '#FFB84D',
+      },
+      background: {
+        default: '#0A0A0A',
+        paper: '#1A1A1A',
+      },
+      text: {
+        primary: '#FFFFFF',
+        secondary: '#B0B0B0',
+      },
+    },
+    typography: {
+      fontFamily: 'Poppins, sans-serif',
+      h4: {
+        fontWeight: 800,
+        background: 'linear-gradient(135deg, #FF6B35 0%, #FF9500 100%)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+      },
+    },
+    components: {
+      MuiCard: {
+        styleOverrides: {
+          root: {
+            background: 'linear-gradient(135deg, #1A1A1A 0%, #2A2A2A 100%)',
+            border: '1px solid #333333',
+            borderRadius: '20px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+            backdropFilter: 'blur(10px)',
+          },
+        },
+      },
+      MuiTextField: {
+        styleOverrides: {
+          root: {
+            '& .MuiOutlinedInput-root': {
+              borderRadius: '12px',
+              backgroundColor: '#1A1A1A',
+              '& fieldset': {
+                borderColor: '#333333',
+                borderWidth: '2px',
+              },
+              '&:hover fieldset': {
+                borderColor: '#FF6B35',
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: '#FF6B35',
+                boxShadow: '0 0 0 3px rgba(255, 107, 53, 0.1)',
+              },
+            },
+          },
+        },
+      },
+      MuiButton: {
+        styleOverrides: {
+          root: {
+            borderRadius: '12px',
+            fontWeight: 600,
+            textTransform: 'none',
+            fontSize: '16px',
+            padding: '12px 24px',
+          },
+          contained: {
+            background: 'linear-gradient(135deg, #FF6B35 0%, #FF9500 100%)',
+            boxShadow: '0 4px 20px rgba(255, 107, 53, 0.3)',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #E55A2B 0%, #E6850E 100%)',
+              transform: 'translateY(-2px)',
+              boxShadow: '0 0 20px rgba(255, 107, 53, 0.5)',
+            },
+          },
+          outlined: {
+            borderColor: '#333333',
+            borderWidth: '2px',
+            color: '#FFFFFF',
+            '&:hover': {
+              borderColor: '#FF6B35',
+              backgroundColor: 'rgba(255, 107, 53, 0.1)',
+              transform: 'translateY(-1px)',
+            },
+          },
+        },
+      },
+    },
+  });
 
   const fillDemoCredentials = (email: string, password: string) => {
     const emailField = document.getElementById('email') as HTMLInputElement;
@@ -91,36 +191,85 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%)',
-        p: 2,
-      }}
-    >
-      <Box sx={{ width: '100%', maxWidth: 1200, display: 'flex', gap: 4 }}>
-        {/* Login Form */}
-        <Card
+    <ThemeProvider theme={darkOrangeTheme}>
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'linear-gradient(135deg, #0A0A0A 0%, #1A1A1A 50%, #0A0A0A 100%)',
+          position: 'relative',
+          overflow: 'hidden',
+          p: 2,
+        }}
+      >
+        {/* Animated Background Elements */}
+        <Box
           sx={{
-            width: '100%',
-            maxWidth: 400,
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            position: 'absolute',
+            top: '10%',
+            left: '10%',
+            width: '200px',
+            height: '200px',
+            background: 'radial-gradient(circle, rgba(255, 107, 53, 0.1) 0%, transparent 70%)',
+            borderRadius: '50%',
+            animation: 'float 6s ease-in-out infinite',
           }}
-        >
-          <CardContent sx={{ p: 4 }}>
-            {/* Logo and Title */}
-            <Box sx={{ textAlign: 'center', mb: 4 }}>
-              <Business sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main', mb: 1 }}>
-                SalesSync
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Sync Your Success in the Field
-              </Typography>
-            </Box>
+        />
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: '20%',
+            right: '15%',
+            width: '150px',
+            height: '150px',
+            background: 'radial-gradient(circle, rgba(255, 149, 0, 0.1) 0%, transparent 70%)',
+            borderRadius: '50%',
+            animation: 'float 8s ease-in-out infinite reverse',
+          }}
+        />
+
+        <Box sx={{ width: '100%', maxWidth: 1200, display: 'flex', gap: 4, zIndex: 1 }}>
+          {/* Login Form */}
+          <Card
+            className="fade-in"
+            sx={{
+              width: '100%',
+              maxWidth: 400,
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 4px 20px rgba(255, 107, 53, 0.3)',
+              },
+            }}
+          >
+            <CardContent sx={{ p: 4 }}>
+              {/* Logo and Title */}
+              <Box sx={{ textAlign: 'center', mb: 4 }}>
+                <Box
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 80,
+                    height: 80,
+                    background: 'linear-gradient(135deg, #FF6B35 0%, #FF9500 100%)',
+                    borderRadius: '20px',
+                    mb: 2,
+                    boxShadow: '0 4px 20px rgba(255, 107, 53, 0.3)',
+                    animation: 'glow 2s ease-in-out infinite alternate',
+                  }}
+                >
+                  <Bolt sx={{ fontSize: 40, color: 'white' }} />
+                </Box>
+                <Typography variant="h4" sx={{ mb: 1 }}>
+                  SalesSync
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '16px' }}>
+                  ⚡ Power Your Sales Performance
+                </Typography>
+              </Box>
 
             {/* Error Alert */}
             {error && (
@@ -198,27 +347,34 @@ const LoginPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Demo Credentials */}
-        <Card
-          sx={{
-            width: '100%',
-            maxWidth: 400,
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-            display: { xs: 'none', md: 'block' },
-          }}
-        >
-          <CardContent sx={{ p: 4 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, textAlign: 'center' }}>
-              Demo Credentials
-            </Typography>
-            
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3, textAlign: 'center' }}>
-              Click on any role below to auto-fill the login form
-            </Typography>
+          {/* Demo Credentials */}
+          <Card
+            className="slide-in-right"
+            sx={{
+              width: '100%',
+              maxWidth: 400,
+              display: { xs: 'none', md: 'block' },
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 4px 20px rgba(255, 107, 53, 0.3)',
+              },
+            }}
+          >
+            <CardContent sx={{ p: 4 }}>
+              <Box sx={{ textAlign: 'center', mb: 4 }}>
+                <TrendingUp sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                  🚀 Demo Access
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Click any role to auto-fill credentials
+                </Typography>
+              </Box>
 
-            {demoCredentials.map((cred, index) => (
-              <Box key={index}>
+              {demoCredentials.map((cred, index) => (
                 <Button
+                  key={index}
                   fullWidth
                   variant="outlined"
                   onClick={() => fillDemoCredentials(cred.email, cred.password)}
@@ -226,35 +382,70 @@ const LoginPage: React.FC = () => {
                     mb: 2,
                     justifyContent: 'flex-start',
                     textAlign: 'left',
-                    py: 1.5,
+                    py: 2,
+                    px: 3,
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: '-100%',
+                      width: '100%',
+                      height: '100%',
+                      background: 'linear-gradient(90deg, transparent, rgba(255, 107, 53, 0.1), transparent)',
+                      transition: 'left 0.5s',
+                    },
+                    '&:hover::before': {
+                      left: '100%',
+                    },
                   }}
                 >
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                      {cred.role}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {cred.email}
-                    </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography sx={{ fontSize: '24px' }}>{cred.icon}</Typography>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'white' }}>
+                        {cred.role}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {cred.email}
+                      </Typography>
+                    </Box>
                   </Box>
                 </Button>
+              ))}
+
+              <Divider sx={{ my: 3, borderColor: '#333333' }} />
+
+              <Box sx={{ textAlign: 'center', p: 2, borderRadius: 2, backgroundColor: 'rgba(255, 107, 53, 0.1)' }}>
+                <Typography variant="body2" color="text.secondary">
+                  <strong style={{ color: '#FF6B35' }}>Demo Company:</strong> Demo Company
+                  <br />
+                  <strong style={{ color: '#FF6B35' }}>Features:</strong> Full sales management suite
+                </Typography>
               </Box>
-            ))}
-
-            <Divider sx={{ my: 3 }} />
-
-            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-              <strong>Demo Company:</strong> TechCorp Solutions
-              <br />
-              <strong>Features:</strong> Complete tech product catalog with realistic sales data
-            </Typography>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
       </Box>
 
-      {/* GoNxt Developer Footer */}
-      <GoNxtFooter />
-    </Box>
+        {/* GoNxt Developer Footer */}
+        <GoNxtFooter />
+      </Box>
+
+      {/* Add floating animation keyframes */}
+      <style>
+        {`
+          @keyframes float {
+            0%, 100% {
+              transform: translateY(0px) rotate(0deg);
+            }
+            50% {
+              transform: translateY(-20px) rotate(180deg);
+            }
+          }
+        `}
+      </style>
+    </ThemeProvider>
   );
 };
 

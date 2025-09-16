@@ -1,4 +1,33 @@
-/* Global styles for SalesSync */
+/* Global styles for SalesSync - Edgy Orange Theme */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+  /* Orange Color Palette */
+  --primary-orange: #FF6B35;
+  --primary-orange-dark: #E55A2B;
+  --primary-orange-light: #FF8A65;
+  --accent-orange: #FF9500;
+  --accent-orange-light: #FFB84D;
+  
+  /* Dark Theme Colors */
+  --dark-bg: #0A0A0A;
+  --dark-surface: #1A1A1A;
+  --dark-surface-light: #2A2A2A;
+  --dark-border: #333333;
+  --dark-text: #FFFFFF;
+  --dark-text-secondary: #B0B0B0;
+  
+  /* Gradient Colors */
+  --gradient-primary: linear-gradient(135deg, #FF6B35 0%, #FF9500 100%);
+  --gradient-dark: linear-gradient(135deg, #0A0A0A 0%, #1A1A1A 100%);
+  --gradient-surface: linear-gradient(135deg, #1A1A1A 0%, #2A2A2A 100%);
+  
+  /* Shadows */
+  --shadow-orange: 0 4px 20px rgba(255, 107, 53, 0.3);
+  --shadow-dark: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 20px rgba(255, 107, 53, 0.5);
+}
 
 * {
   box-sizing: border-box;
@@ -6,12 +35,14 @@
 
 body {
   margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f8fafc;
+  background: var(--gradient-dark);
+  color: var(--dark-text);
+  overflow-x: hidden;
 }
 
 code {
@@ -19,23 +50,30 @@ code {
     monospace;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar - Edgy Orange */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--dark-surface);
+  border-radius: 6px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
+  background: var(--gradient-primary);
+  border-radius: 6px;
+  border: 2px solid var(--dark-surface);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--primary-orange-dark);
+  box-shadow: var(--shadow-orange);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--dark-surface);
 }
 
 /* Utility classes */
@@ -83,42 +121,71 @@ code {
   min-height: 100vh;
 }
 
-/* Animation classes */
+/* Animation classes - Enhanced */
 .fade-in {
-  animation: fadeIn 0.3s ease-in-out;
+  animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(20px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 .slide-in-right {
-  animation: slideInRight 0.3s ease-in-out;
+  animation: slideInRight 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes slideInRight {
   from {
     opacity: 0;
-    transform: translateX(20px);
+    transform: translateX(30px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateX(0) scale(1);
   }
 }
 
-/* Loading states */
+.glow-effect {
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 20px rgba(255, 107, 53, 0.3);
+  }
+  to {
+    box-shadow: 0 0 30px rgba(255, 107, 53, 0.6);
+  }
+}
+
+.pulse-orange {
+  animation: pulseOrange 2s ease-in-out infinite;
+}
+
+@keyframes pulseOrange {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 107, 53, 0.7);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(255, 107, 53, 0);
+  }
+}
+
+/* Loading states - Dark Orange Theme */
 .loading-skeleton {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--dark-surface) 25%, var(--dark-surface-light) 50%, var(--dark-surface) 75%);
   background-size: 200% 100%;
   animation: loading 1.5s infinite;
+  border-radius: 8px;
 }
 
 @keyframes loading {
@@ -128,6 +195,54 @@ code {
   100% {
     background-position: -200% 0;
   }
+}
+
+/* Edgy UI Components */
+.edgy-card {
+  background: var(--gradient-surface);
+  border: 1px solid var(--dark-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-dark);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.edgy-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-dark), var(--shadow-orange);
+  border-color: var(--primary-orange);
+}
+
+.edgy-button {
+  background: var(--gradient-primary);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-orange);
+}
+
+.edgy-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow);
+}
+
+.edgy-input {
+  background: var(--dark-surface);
+  border: 2px solid var(--dark-border);
+  border-radius: 12px;
+  color: var(--dark-text);
+  padding: 12px 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.edgy-input:focus {
+  border-color: var(--primary-orange);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+  outline: none;
 }
 
 /* Custom Material-UI overrides */

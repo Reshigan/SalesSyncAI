@@ -1,0 +1,61 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="orangeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF6B35;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF9500;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="darkGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1A1A1A;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2A2A2A;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background Circle -->
+  <circle cx="100" cy="100" r="90" fill="url(#darkGradient)" stroke="url(#orangeGradient)" stroke-width="4"/>
+  
+  <!-- Lightning Bolt -->
+  <path d="M75 60 L110 60 L90 100 L125 100 L90 140 L70 110 L90 110 L75 60 Z" 
+        fill="url(#orangeGradient)" 
+        filter="url(#glow)"
+        stroke="#FFFFFF" 
+        stroke-width="2"/>
+  
+  <!-- Sync Arrows -->
+  <path d="M130 75 L150 85 L130 95 M150 85 L135 85" 
+        stroke="url(#orangeGradient)" 
+        stroke-width="3" 
+        fill="none" 
+        stroke-linecap="round"/>
+  
+  <path d="M70 105 L50 115 L70 125 M50 115 L65 115" 
+        stroke="url(#orangeGradient)" 
+        stroke-width="3" 
+        fill="none" 
+        stroke-linecap="round"/>
+  
+  <!-- Sales Chart Lines -->
+  <polyline points="40,160 55,150 70,140 85,135 100,130" 
+            stroke="url(#orangeGradient)" 
+            stroke-width="3" 
+            fill="none" 
+            stroke-linecap="round"/>
+  
+  <polyline points="115,130 130,135 145,140 160,150 175,160" 
+            stroke="url(#orangeGradient)" 
+            stroke-width="3" 
+            fill="none" 
+            stroke-linecap="round"/>
+  
+  <!-- Data Points -->
+  <circle cx="55" cy="150" r="4" fill="#FF6B35"/>
+  <circle cx="85" cy="135" r="4" fill="#FF9500"/>
+  <circle cx="130" cy="135" r="4" fill="#FF6B35"/>
+  <circle cx="160" cy="150" r="4" fill="#FF9500"/>
+</svg>
