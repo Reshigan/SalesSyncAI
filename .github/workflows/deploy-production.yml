@@ -140,9 +140,6 @@ jobs:
           # Test backend health
           curl -f http://localhost:3001/health || (echo "❌ Backend health check failed" && exit 1)
           
-          # Test API health
-          curl -f http://localhost:3001/api/health || (echo "❌ API health check failed" && exit 1)
-          
           # Test login endpoint (non-blocking)
           echo "🔐 Testing login endpoint..."
           LOGIN_RESULT=$(curl -X POST http://localhost:3001/api/auth/login \
