@@ -122,9 +122,9 @@ install_nodejs() {
     log "✅ Node.js installed: $node_version"
     log "✅ npm installed: $npm_version"
     
-    # Update npm to latest version
-    log "Updating npm to latest version..."
-    npm install -g npm@latest
+    # Update npm to compatible version for Node.js 18
+    log "Updating npm to compatible version..."
+    npm install -g npm@10.9.0
     
     # Install global packages
     log "Installing global packages..."
