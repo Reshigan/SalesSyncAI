@@ -31,9 +31,10 @@ jobs:
         npm ci
         
     - name: 📦 Install Frontend Dependencies
+      timeout-minutes: 10
       run: |
         cd frontend
-        npm ci
+        npm ci --prefer-offline --no-audit --progress=false
         
     - name: 🧪 Run Backend Tests
       run: |
