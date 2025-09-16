@@ -72,10 +72,10 @@ const LoginPage: React.FC = () => {
   };
 
   const demoCredentials = [
-    { role: 'Company Admin', email: 'admin@salessync.com', password: 'admin123', icon: '👑' },
-    { role: 'Regional Manager', email: 'manager@salessync.com', password: 'manager123', icon: '📊' },
-    { role: 'Field Sales Agent', email: 'sales@salessync.com', password: 'sales123', icon: '🚀' },
-    { role: 'Field Representative', email: 'field@salessync.com', password: 'field123', icon: '⚡' },
+    { role: 'Company Admin', email: 'admin@premiumbeverages.com', password: 'admin123', icon: '👑' },
+    { role: 'Regional Manager', email: 'manager@premiumbeverages.com', password: 'manager123', icon: '📊' },
+    { role: 'Field Sales Agent', email: 'agent@premiumbeverages.com', password: 'agent123', icon: '🚀' },
+    { role: 'Field Representative', email: 'rep@premiumbeverages.com', password: 'rep123', icon: '⚡' },
   ];
 
   // Dark Orange Theme
