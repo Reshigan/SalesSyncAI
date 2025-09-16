@@ -72,10 +72,10 @@ const LoginPage: React.FC = () => {
   };
 
   const demoCredentials = [
-    { role: 'Company Admin', email: 'admin@demo.com', password: 'admin123', icon: '👑' },
-    { role: 'Regional Manager', email: 'manager@demo.com', password: 'manager123', icon: '📊' },
-    { role: 'Field Sales Agent', email: 'sales@demo.com', password: 'sales123', icon: '🚀' },
-    { role: 'Agent', email: 'user@demo.com', password: 'user123', icon: '⚡' },
+    { role: 'Company Admin', email: 'admin@salessync.com', password: 'admin123', icon: '👑' },
+    { role: 'Regional Manager', email: 'manager@salessync.com', password: 'manager123', icon: '📊' },
+    { role: 'Field Sales Agent', email: 'sales@salessync.com', password: 'sales123', icon: '🚀' },
+    { role: 'Field Representative', email: 'field@salessync.com', password: 'field123', icon: '⚡' },
   ];
 
   // Dark Orange Theme
@@ -266,8 +266,11 @@ const LoginPage: React.FC = () => {
                 <Typography variant="h4" sx={{ mb: 1 }}>
                   SalesSync
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '16px' }}>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '16px', fontWeight: 500 }}>
                   ⚡ Power Your Sales Performance
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '14px', mt: 1, display: 'block' }}>
+                  🚀 Field Marketing Platform
                 </Typography>
               </Box>
 
@@ -367,8 +370,11 @@ const LoginPage: React.FC = () => {
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
                   🚀 Demo Access
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                   Click any role to auto-fill credentials
+                </Typography>
+                <Typography variant="caption" color="primary.main" sx={{ fontWeight: 600 }}>
+                  ✨ Try different user roles instantly
                 </Typography>
               </Box>
 
@@ -422,6 +428,8 @@ const LoginPage: React.FC = () => {
                   <strong style={{ color: '#FF6B35' }}>Demo Company:</strong> Demo Company
                   <br />
                   <strong style={{ color: '#FF6B35' }}>Features:</strong> Full sales management suite
+                  <br />
+                  <strong style={{ color: '#FF6B35' }}>Status:</strong> Ready for testing 🎯
                 </Typography>
               </Box>
             </CardContent>

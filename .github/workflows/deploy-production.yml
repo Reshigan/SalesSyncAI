@@ -2,7 +2,7 @@ name: 🚀 Deploy to Production
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, fix-production-login-and-ui-redesign ]
   pull_request:
     branches: [ main ]
     types: [ closed ]
@@ -31,9 +31,10 @@ jobs:
         npm ci
         
     - name: 📦 Install Frontend Dependencies
+      timeout-minutes: 10
       run: |
         cd frontend
-        npm ci
+        npm ci --prefer-offline --no-audit --progress=false
         
     - name: 🧪 Run Backend Tests
       run: |
@@ -101,8 +102,10 @@ jobs:
           rm -rf node_modules package-lock.json
           npm install
           
-          # Generate Prisma client
-          echo "🔄 Generating Prisma client..."
+          # Clear Prisma cache and generate client
+          echo "🔄 Clearing Prisma cache and generating client..."
+          rm -rf node_modules/.prisma || true
+          rm -rf prisma/generated || true
           npx prisma generate
           
           # Database migration and seeding

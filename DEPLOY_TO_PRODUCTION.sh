@@ -62,9 +62,11 @@ cd backend
 npm install
 print_success "Backend dependencies installed"
 
-print_status "Step 6: Generating Prisma client..."
+print_status "Step 6: Clearing Prisma cache and generating client..."
+rm -rf node_modules/.prisma || true
+rm -rf prisma/generated || true
 npx prisma generate
-print_success "Prisma client generated"
+print_success "Prisma client generated (cache cleared)"
 
 print_status "Step 7: Resetting database with new schema..."
 print_warning "This will reset the database and remove all existing data!"
