@@ -1,5 +1,19 @@
 # 🚀 SalesSync Production Update Commands
 
+## 🧹 Clean Server Installation (RECOMMENDED for problematic servers)
+
+### 🔥 Complete Server Reset (Nuclear Option)
+For servers with multiple conflicts, Docker issues, or corrupted installations:
+```bash
+sudo wget -O clean-install.sh https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/clean-server-install.sh && sudo chmod +x clean-install.sh && sudo ./clean-install.sh
+```
+
+### 🧽 Advanced Clean Installation (Multiple Options)
+Interactive script with different cleanup levels:
+```bash
+sudo wget -O clean-advanced.sh https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/clean-server-advanced.sh && sudo chmod +x clean-advanced.sh && sudo ./clean-advanced.sh
+```
+
 ## 🔧 Fix Production Deployment Issues (TypeScript + Nginx + Database)
 
 Run this command to fix TypeScript build errors, Nginx configuration issues, and database permissions:
