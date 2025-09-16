@@ -87,21 +87,22 @@ if [ $? -eq 0 ]; then
         const c=await p.company.upsert({
             where:{slug:'demo'},
             update:{},
-            create:{name:'Demo Company',slug:'demo',description:'Demo',isActive:true}
+            create:{name:'Demo Company',slug:'demo',isActive:true}
         });
         const u=await p.user.upsert({
-            where:{email:'admin@demo.com'},
+            where:{companyId_email:{companyId:c.id,email:'admin@demo.com'}},
             update:{},
             create:{
+                companyId:c.id,
                 email:'admin@demo.com',
                 password:'\$2b\$10\$rQZ9QmjQZ9QmjQZ9QmjQZO',
-                name:'Admin',
-                role:'ADMIN',
-                isActive:true,
-                companyId:c.id
+                firstName:'Demo',
+                lastName:'Admin',
+                role:'COMPANY_ADMIN',
+                isActive:true
             }
         });
-        console.log('✅ Seeded:',c.name,u.name);
+        console.log('✅ Seeded:',c.name,u.firstName+' '+u.lastName);
         await p.\$disconnect();
     })().catch(e=>{console.error('❌ Seed error:',e);process.exit(1)});
     "
