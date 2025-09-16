@@ -2,7 +2,7 @@ name: 🚀 Deploy to Production
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, fix-production-login-and-ui-redesign ]
   pull_request:
     branches: [ main ]
     types: [ closed ]
