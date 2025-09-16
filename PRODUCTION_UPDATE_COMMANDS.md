@@ -1,29 +1,45 @@
 # 🚀 SalesSync Production Update Commands
 
-## 🔧 Fix Current Database Permission Issue
+## 🔧 Fix Production Deployment Issues (TypeScript + Nginx + Database)
+
+Run this command to fix TypeScript build errors, Nginx configuration issues, and database permissions:
+
+```bash
+sudo wget -O fix-deployment.sh https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/fix-production-deployment.sh && sudo chmod +x fix-deployment.sh && sudo ./fix-deployment.sh
+```
+
+## 🔧 Fix Database Permission Issue Only
 
 Run this command on your production server to fix the "permission denied for schema public" error:
 
 ```bash
-sudo wget -O fix-db.sh https://raw.githubusercontent.com/Reshigan/SalesSyncAI/fix-prisma-seeding-validation/fix-database-permissions.sh && sudo chmod +x fix-db.sh && sudo ./fix-db.sh
+sudo wget -O fix-db.sh https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/fix-database-permissions.sh && sudo chmod +x fix-db.sh && sudo ./fix-db.sh
+```
+
+## 🔧 Fix TypeScript Build Issues Only
+
+Run this command to fix TypeScript compilation errors:
+
+```bash
+sudo wget -O fix-ts.sh https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/fix-typescript-build.sh && sudo chmod +x fix-ts.sh && sudo ./fix-ts.sh
 ```
 
 ## 📥 Get Latest Deployment Scripts
 
 ```bash
-wget -O get-scripts.sh https://raw.githubusercontent.com/Reshigan/SalesSyncAI/fix-prisma-seeding-validation/get-production-scripts.sh && chmod +x get-scripts.sh && ./get-scripts.sh
+wget -O get-scripts.sh https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/get-production-scripts.sh && chmod +x get-scripts.sh && ./get-scripts.sh
 ```
 
 ## 🚀 Full Production Deployment (First Time)
 
 ```bash
-sudo wget -O deploy.sh https://raw.githubusercontent.com/Reshigan/SalesSyncAI/fix-prisma-seeding-validation/update-production-with-ssl.sh && sudo chmod +x deploy.sh && sudo ./deploy.sh
+sudo wget -O deploy.sh https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/update-production-with-ssl.sh && sudo chmod +x deploy.sh && sudo ./deploy.sh
 ```
 
 ## 🔄 Quick Update (Existing Deployment)
 
 ```bash
-sudo wget -O update.sh https://raw.githubusercontent.com/Reshigan/SalesSyncAI/fix-prisma-seeding-validation/quick-update-production.sh && sudo chmod +x update.sh && sudo ./update.sh
+sudo wget -O update.sh https://raw.githubusercontent.com/Reshigan/SalesSyncAI/main/quick-update-production.sh && sudo chmod +x update.sh && sudo ./update.sh
 ```
 
 ## 🌐 Your Site
