@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -18,6 +18,7 @@ model Company {
   id                String   @id @default(uuid())
   name              String
   slug              String   @unique
+  description       String?
   logo              String?
   settings          Json     @default("{}")
   subscriptionTier  String   @default("basic")
@@ -38,11 +39,6 @@ model Company {
   activations       Activation[]
   stockMovements    StockMovement[]
   cashReconciliations CashReconciliation[]
-  marketingCampaigns MarketingCampaign[]
-  agentBehaviorProfiles AgentBehaviorProfile[]
-  fraudDetectionLogs FraudDetectionLog[]
-  notifications     Notification[]
-  notificationTemplates NotificationTemplate[]
 
   @@map("companies")
 }
@@ -54,6 +50,7 @@ model User {
   password    String
   firstName   String
   lastName    String
+  name        String   @default("")
   phone       String?
   role        UserRole
   permissions Json     @default("[]")
@@ -72,16 +69,8 @@ model User {
   cashReconciliations CashReconciliation[]
   activationAssignments ActivationAssignment[]
   fraudInvestigations FraudInvestigation[]
-  createdMarketingCampaigns MarketingCampaign[]
-  campaignPerformances CampaignPerformance[]
-  campaignTrackings   CampaignTracking[]
-  streetMarketingSessions StreetMarketingSession[]
-  agentBehaviorProfile AgentBehaviorProfile?
-  fraudDetectionLogs  FraudDetectionLog[]
-  investigatedFraudLogs FraudDetectionLog[] @relation("FraudInvestigator")
-  notifications       Notification[]
-  inAppNotifications  InAppNotification[]
   pushSubscriptions   PushSubscription[]
+  leads               Lead[]
 
   @@unique([companyId, email])
   @@map("users")
@@ -299,14 +288,34 @@ model Customer {
   @@map("customers")
 }
 
+model Lead {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  email     String
+  phone     String?
+  company   String?
+  status    String   @default("NEW")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  visits    Visit[]
+
+  @@map("leads")
+}
+
 model Visit {
   id              String      @id @default(uuid())
   companyId       String
   agentId         String
-  customerId      String
+  customerId      String?
+  leadId          String?
   plannedStartTime DateTime?
   actualStartTime DateTime?
   actualEndTime   DateTime?
+  visitDate       DateTime
   status          VisitStatus @default(PLANNED)
   gpsLocation     Json?       // {arrival: {lat, lng}, departure: {lat, lng}}
   activities      Json        @default("[]") // Array of activities completed
@@ -319,7 +328,8 @@ model Visit {
   // Relationships
   company       Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   agent         User    @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer      Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  lead          Lead?   @relation(fields: [leadId], references: [id])
   sales         Sale[]
   surveyResponses SurveyResponse[]
   assetAudits   AssetAudit[]
@@ -353,12 +363,16 @@ model Sale {
   visitId       String?
   invoiceNumber String      @unique
   totalAmount   Decimal     @db.Decimal(10, 2)
+  amount        Decimal     @db.Decimal(10, 2) @default(0)
   taxAmount     Decimal     @db.Decimal(10, 2) @default(0)
   discountAmount Decimal    @db.Decimal(10, 2) @default(0)
   paymentMethod PaymentMethod
   paymentStatus PaymentStatus @default(PENDING)
   paidAmount    Decimal     @db.Decimal(10, 2) @default(0)
   dueDate       DateTime?
+  saleDate      DateTime    @default(now())
+  status        String      @default("COMPLETED")
+  notes         String?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
@@ -671,6 +685,29 @@ model FraudInvestigation {
   @@map("fraud_investigations")
 }
 
+model AgentBehaviorProfile {
+  id                String   @id @default(uuid())
+  agentId           String   @unique
+  behaviorPatterns  Json     @default("{}")
+  riskScore         Decimal  @db.Decimal(5, 2) @default(0)
+  lastUpdated       DateTime @updatedAt
+  createdAt         DateTime @default(now())
+
+  @@map("agent_behavior_profiles")
+}
+
+model FraudDetectionLog {
+  id          String   @id @default(uuid())
+  agentId     String
+  fraudType   String
+  severity    FraudSeverity
+  evidence    Json
+  detected    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@map("fraud_detection_logs")
+}
+
 enum FraudSeverity {
   LOW
   MEDIUM
@@ -683,6 +720,64 @@ enum FraudInvestigationStatus {
   IN_PROGRESS
   UNDER_REVIEW
   CLOSED
+}
+
+// ============================================================================
+// NOTIFICATION MODELS
+// ============================================================================
+
+model Notification {
+  id        String              @id @default(uuid())
+  userId    String?
+  companyId String?
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?               @default("{}")
+  isRead    Boolean             @default(false)
+  createdAt DateTime            @default(now())
+
+  @@map("notifications")
+}
+
+model InAppNotification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("info")
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("in_app_notifications")
+}
+
+model NotificationTemplate {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  subject     String
+  body        String
+  type        String
+  variables   Json     @default("[]")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("notification_templates")
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String
+  keys      Json
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("push_subscriptions")
 }
 
 // ============================================================================
@@ -728,202 +823,4 @@ enum NotificationType {
   STOCK_ALERT
   FRAUD_ALERT
   SYSTEM_MAINTENANCE
-}
-
-// ============================================================================
-// ADDITIONAL MODELS FOR ADVANCED FEATURES
-// ============================================================================
-
-model MarketingCampaign {
-  id                String   @id @default(uuid())
-  companyId         String
-  name              String
-  description       String?
-  type              String
-  status            String   @default("DRAFT")
-  startDate         DateTime?
-  endDate           DateTime?
-  budget            Decimal? @db.Decimal(10, 2)
-  targetAudience    Json?    @default("{}")
-  materials         Json?    @default("{}")
-  settings          Json?    @default("{}")
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  createdBy         String
-
-  // Relationships
-  company           Company  @relation(fields: [companyId], references: [id])
-  creator           User     @relation(fields: [createdBy], references: [id])
-  performances      CampaignPerformance[]
-  trackings         CampaignTracking[]
-  streetMarketingSessions StreetMarketingSession[]
-
-  @@map("marketing_campaigns")
-}
-
-model CampaignPerformance {
-  id                String   @id @default(uuid())
-  campaignId        String
-  agentId           String
-  date              DateTime @default(now())
-  impressions       Int      @default(0)
-  interactions      Int      @default(0)
-  conversions       Int      @default(0)
-  revenue           Decimal? @db.Decimal(10, 2)
-  metrics           Json?    @default("{}")
-  createdAt         DateTime @default(now())
-
-  // Relationships
-  campaign          MarketingCampaign @relation(fields: [campaignId], references: [id])
-  agent             User              @relation(fields: [agentId], references: [id])
-
-  @@map("campaign_performances")
-}
-
-model CampaignTracking {
-  id                String   @id @default(uuid())
-  campaignId        String
-  agentId           String
-  eventType         String
-  eventData         Json?    @default("{}")
-  location          Json?    @default("{}")
-  timestamp         DateTime @default(now())
-
-  // Relationships
-  campaign          MarketingCampaign @relation(fields: [campaignId], references: [id])
-  agent             User              @relation(fields: [agentId], references: [id])
-
-  @@map("campaign_trackings")
-}
-
-model StreetMarketingSession {
-  id                String   @id @default(uuid())
-  campaignId        String
-  agentId           String
-  location          Json?    @default("{}")
-  startTime         DateTime
-  endTime           DateTime?
-  status            String   @default("ACTIVE")
-  targetMetrics     Json?    @default("{}")
-  actualMetrics     Json?    @default("{}")
-  customerData      Json?    @default("{}")
-  fraudRiskScore    Float?   @default(0)
-  notes             String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  // Relationships
-  campaign          MarketingCampaign @relation(fields: [campaignId], references: [id])
-  agent             User              @relation(fields: [agentId], references: [id])
-
-  @@map("street_marketing_sessions")
-}
-
-model AgentBehaviorProfile {
-  id                String   @id @default(uuid())
-  agentId           String   @unique
-  companyId         String
-  behaviorMetrics   Json     @default("{}")
-  riskScore         Float    @default(0)
-  lastUpdated       DateTime @updatedAt
-  createdAt         DateTime @default(now())
-
-  // Relationships
-  agent             User     @relation(fields: [agentId], references: [id])
-  company           Company  @relation(fields: [companyId], references: [id])
-
-  @@map("agent_behavior_profiles")
-}
-
-model FraudDetectionLog {
-  id                String   @id @default(uuid())
-  agentId           String
-  companyId         String
-  eventType         String
-  riskScore         Float
-  evidence          Json     @default("{}")
-  autoActions       Json     @default("{}")
-  status            String   @default("PENDING")
-  investigatedBy    String?
-  resolution        String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  // Relationships
-  agent             User     @relation(fields: [agentId], references: [id])
-  company           Company  @relation(fields: [companyId], references: [id])
-  investigator      User?    @relation("FraudInvestigator", fields: [investigatedBy], references: [id])
-
-  @@map("fraud_detection_logs")
-}
-
-model Notification {
-  id                String   @id @default(uuid())
-  userId            String
-  companyId         String
-  type              String
-  title             String
-  message           String
-  data              Json?    @default("{}")
-  channels          Json     @default("{}")
-  status            String   @default("PENDING")
-  sentAt            DateTime?
-  readAt            DateTime?
-  createdAt         DateTime @default(now())
-
-  // Relationships
-  user              User     @relation(fields: [userId], references: [id])
-  company           Company  @relation(fields: [companyId], references: [id])
-
-  @@map("notifications")
-}
-
-model InAppNotification {
-  id                String   @id @default(uuid())
-  userId            String
-  title             String
-  message           String
-  type              String   @default("INFO")
-  data              Json?    @default("{}")
-  isRead            Boolean  @default(false)
-  readAt            DateTime?
-  createdAt         DateTime @default(now())
-
-  // Relationships
-  user              User     @relation(fields: [userId], references: [id])
-
-  @@map("in_app_notifications")
-}
-
-model PushSubscription {
-  id                String   @id @default(uuid())
-  userId            String
-  endpoint          String
-  keys              Json
-  isActive          Boolean  @default(true)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  // Relationships
-  user              User     @relation(fields: [userId], references: [id])
-
-  @@map("push_subscriptions")
-}
-
-model NotificationTemplate {
-  id                String   @id @default(uuid())
-  companyId         String
-  name              String
-  type              String
-  subject           String?
-  content           String
-  variables         Json?    @default("{}")
-  isActive          Boolean  @default(true)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  // Relationships
-  company           Company  @relation(fields: [companyId], references: [id])
-
-  @@map("notification_templates")
 }
