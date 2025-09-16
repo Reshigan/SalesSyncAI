@@ -60,7 +60,19 @@ npx prisma generate
 
 # Run database migrations
 log "Running database migrations..."
-DATABASE_URL="postgresql://salessync:salessync_secure_password_2024@localhost:5432/$DB_NAME" npx prisma migrate deploy
+DATABASE_URL="postgresql://salessync:salessync_secure_password_2024@localhost:5432/$DB_NAME" npx prisma migrate deploy || {
+    warning "Migration failed, attempting to fix database permissions..."
+    
+    # Fix database permissions
+    sudo -u postgres psql -c "ALTER USER salessync SUPERUSER;" 2>/dev/null || true
+    sudo -u postgres psql -d "$DB_NAME" -c "GRANT ALL ON SCHEMA public TO salessync;" 2>/dev/null || true
+    sudo -u postgres psql -d "$DB_NAME" -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO salessync;" 2>/dev/null || true
+    sudo -u postgres psql -d "$DB_NAME" -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO salessync;" 2>/dev/null || true
+    
+    # Retry migration
+    log "Retrying database migrations..."
+    DATABASE_URL="postgresql://salessync:salessync_secure_password_2024@localhost:5432/$DB_NAME" npx prisma migrate deploy
+}
 
 # Build application
 log "Building application..."

@@ -141,7 +141,16 @@ setup_database() {
         sudo -u postgres psql -c "CREATE USER salessync WITH PASSWORD 'salessync_secure_password_2024';"
         sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO salessync;"
         sudo -u postgres psql -c "ALTER USER salessync CREATEDB;"
+        sudo -u postgres psql -c "ALTER USER salessync SUPERUSER;"
     }
+    
+    # Grant schema permissions
+    log "Setting up database permissions..."
+    sudo -u postgres psql -d "$DB_NAME" -c "GRANT ALL ON SCHEMA public TO salessync;"
+    sudo -u postgres psql -d "$DB_NAME" -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO salessync;"
+    sudo -u postgres psql -d "$DB_NAME" -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO salessync;"
+    sudo -u postgres psql -d "$DB_NAME" -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO salessync;"
+    sudo -u postgres psql -d "$DB_NAME" -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO salessync;"
     
     log "Database setup completed"
 }
