@@ -56,6 +56,24 @@ const navigationItems: NavigationItem[] = [
     icon: <Campaign />,
   },
   {
+    title: 'Trade Marketing',
+    path: '/trade-marketing',
+    icon: <Store />,
+    badge: 'Coming Soon',
+  },
+  {
+    title: 'Trade Promotion',
+    path: '/trade-promotion',
+    icon: <TrendingUp />,
+    badge: 'Coming Soon',
+  },
+  {
+    title: 'Events',
+    path: '/events',
+    icon: <Event />,
+    badge: 'Coming Soon',
+  },
+  {
     title: 'Visits',
     path: '/visits',
     icon: <LocationOn />,
@@ -97,6 +115,13 @@ const Sidebar: React.FC<SidebarProps> = ({ onItemClick }) => {
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Logo and Brand */}
       <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}>
+          <img 
+            src="/favicon.svg" 
+            alt="SalesSyncAI Logo" 
+            style={{ width: '48px', height: '48px' }} 
+          />
+        </Box>
         <Typography
           variant="h5"
           sx={{
@@ -105,7 +130,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onItemClick }) => {
             mb: 1,
           }}
         >
-          SalesSync
+          SalesSyncAI
         </Typography>
         <Typography
           variant="caption"
@@ -114,7 +139,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onItemClick }) => {
             fontStyle: 'italic',
           }}
         >
-          Sync Your Success in the Field
+          Intelligent Field Sales Management
         </Typography>
       </Box>
 

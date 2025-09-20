@@ -1,0 +1,33 @@
+<svg width="240" height="60" viewBox="0 0 240 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Logo Icon -->
+  <rect x="10" y="10" width="40" height="40" rx="8" fill="#1E3A8A"/>
+  <circle cx="30" cy="30" r="12" fill="#FB923C"/>
+  <circle cx="30" cy="30" r="8" fill="#1E3A8A"/>
+  <circle cx="30" cy="30" r="4" fill="white"/>
+  
+  <!-- Text: SalesSync -->
+  <path d="M65 25C65 23.3431 66.3431 22 68 22H72C73.6569 22 75 23.3431 75 25C75 26.6569 73.6569 28 72 28H68C66.3431 28 65 26.6569 65 25Z" fill="#1E3A8A"/>
+  <path d="M65 35C65 33.3431 66.3431 32 68 32H72C73.6569 32 75 33.3431 75 35C75 36.6569 73.6569 38 72 38H68C66.3431 38 65 36.6569 65 35Z" fill="#1E3A8A"/>
+  <path d="M68 28H72V32H68V28Z" fill="#1E3A8A"/>
+  
+  <path d="M80 22H84V38H80V22Z" fill="#1E3A8A"/>
+  
+  <path d="M90 22H94V34H102V38H90V22Z" fill="#1E3A8A"/>
+  
+  <path d="M107 22H119V26H111V28H118V32H111V34H119V38H107V22Z" fill="#1E3A8A"/>
+  
+  <path d="M125 22H137V26H129V28H136V32H129V34H137V38H125V22Z" fill="#1E3A8A"/>
+  
+  <path d="M143 22H147V28H149L153 22H158L152 30L158 38H153L149 32H147V38H143V22Z" fill="#1E3A8A"/>
+  
+  <path d="M163 22H167V34H175V38H163V22Z" fill="#1E3A8A"/>
+  
+  <path d="M180 22H184V38H180V22Z" fill="#1E3A8A"/>
+  
+  <path d="M190 22H194V28H196L200 22H205L199 30L205 38H200L196 32H194V38H190V22Z" fill="#1E3A8A"/>
+  
+  <!-- Text: AI -->
+  <path d="M210 22H214L218 38H214L213 34H211L210 38H206L210 22ZM212 30L211.5 28L211 30H212Z" fill="#FB923C"/>
+  
+  <path d="M220 22H224V38H220V22Z" fill="#FB923C"/>
+</svg>

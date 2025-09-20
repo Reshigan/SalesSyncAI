@@ -11,6 +11,9 @@ import LoadingSpinner from './components/Common/LoadingSpinner';
 // Lazy load pages for better performance
 const UsersPage = React.lazy(() => import('./pages/Users/UsersPage'));
 const CampaignsPage = React.lazy(() => import('./pages/Campaigns/CampaignsPage'));
+const TradeMarketingPage = React.lazy(() => import('./pages/TradeMarketing/TradeMarketingPage'));
+const TradePromotionPage = React.lazy(() => import('./pages/TradePromotion/TradePromotionPage'));
+const EventsPage = React.lazy(() => import('./pages/Events/EventsPage'));
 const VisitsPage = React.lazy(() => import('./pages/Visits/VisitsPage'));
 const SalesPage = React.lazy(() => import('./pages/Sales/SalesPage'));
 const ReportsPage = React.lazy(() => import('./pages/Reports/ReportsPage'));
@@ -72,6 +75,9 @@ const App: React.FC = () => {
                     <Route path="/dashboard" element={<DashboardPage />} />
                     <Route path="/users" element={<UsersPage />} />
                     <Route path="/campaigns" element={<CampaignsPage />} />
+                    <Route path="/trade-marketing" element={<TradeMarketingPage />} />
+                    <Route path="/trade-promotion" element={<TradePromotionPage />} />
+                    <Route path="/events" element={<EventsPage />} />
                     <Route path="/visits" element={<VisitsPage />} />
                     <Route path="/sales" element={<SalesPage />} />
                     <Route path="/reports" element={<ReportsPage />} />

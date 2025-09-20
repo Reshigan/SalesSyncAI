@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { authService, User } from '../services/authService';
-import toast from 'react-hot-toast';
 
 interface AuthState {
   user: User | null;
@@ -128,14 +127,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         },
       });
 
-      toast.success(`Welcome back, ${response.user.firstName}!`);
+      console.log(`Welcome back, ${response.user.firstName}!`);
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Login failed. Please try again.';
       dispatch({
         type: 'AUTH_FAILURE',
         payload: errorMessage,
       });
-      toast.error(errorMessage);
+      console.error(errorMessage);
       throw error;
     }
   };
@@ -155,7 +154,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       authService.setToken(null);
       
       dispatch({ type: 'AUTH_LOGOUT' });
-      toast.success('Logged out successfully');
+      console.log('Logged out successfully');
     }
   };
 
