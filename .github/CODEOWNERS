@@ -1,0 +1,27 @@
+# SalesSyncAI Code Owners File
+
+# This file defines who is responsible for reviewing and approving changes to different parts of the codebase.
+# Each line is a file pattern followed by one or more owners.
+
+# These owners will be the default owners for everything in the repo
+*       @Reshigan
+
+# Frontend code
+/frontend/       @Reshigan
+
+# Backend code
+/backend/        @Reshigan
+
+# Documentation
+/docs/           @Reshigan
+
+# UI Components
+/frontend/src/components/    @Reshigan
+
+# Branding and design assets
+/frontend/public/            @Reshigan
+
+# Configuration files
+*.json           @Reshigan
+*.yml            @Reshigan
+*.yaml           @Reshigan
